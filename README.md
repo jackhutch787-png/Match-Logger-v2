@@ -1,38 +1,37 @@
-# LL Match Logger — Windows Desktop App v1.2.1
+# LL Match Logger — Windows Desktop App v1.2.2
 
-This is **v1.2.1** of LL Match Logger, the standalone Windows desktop build for football live logging.
+This is **v1.2.2** of LL Match Logger, the standalone Windows desktop build for football live logging.
 
-## What changed in v1.2.1
+## What changed in v1.2.2
 
-- Sky fixture parsing now supports **scheduled, live, completed and postponed** match formats. This fixes historical dates where Sky shows scores instead of `vs` + kick-off time.
-
-- Uses the Sky Sports Scores & Fixtures page through the desktop Electron process.
-- Correctly recognises Sky's branded competition headings such as **EFL League One** and **EFL League Two**.
-- Handles Sky's fixture markup where the human-readable `Team A vs Team B` text is stored in the surrounding fixture element rather than directly inside the fixture link.
-- Includes a body-text fallback parser for Sky's rendered fixture list.
-- Waits for Sky's client-rendered page to populate before parsing, rather than relying on a short fixed delay.
-- Restricts fixtures to these competitions:
-  - Premier League
-  - Championship
-  - League One
-  - League Two
-  - WSL
-  - EFL Trophy
-  - Carabao Cup
-  - UEFA Europa League
-  - UEFA Europa Conference League
+- **Line-up parsing has been rewritten around Sky Sports' actual Teams section.** The parser ignores navigation, league tables and other team names before the Teams section.
+- It identifies the two match teams from Sky's team image markers, so Sky labels such as **B'mouth** do not break matching with the fixture's **Bournemouth** name.
+- It reads Sky's `shirt number → player name` structure for the 11 starters and separates the **Substitutes** block correctly.
+- Captain markers and match-event minute lines are ignored rather than being treated as player names.
+- The app refuses to save an automatic import unless both teams have exactly 11 starters, preventing a partial/incorrect import from being presented as successful.
+- Sky fixture parsing from v1.2.1 is retained.
 - No browser CORS proxy is required.
 - No Node.js installation is required on the work laptop.
 
+## Supported competitions
+
+- Premier League
+- Championship
+- League One
+- League Two
+- WSL
+- EFL Trophy
+- Carabao Cup
+- UEFA Europa League
+- UEFA Europa Conference League
+
 ## Build on GitHub
 
-1. Replace the repository's `index.html`, `main.js`, `package.json`, and `README.md` with these files.
+1. Replace the repository's `index.html`, `package.json`, and `README.md` with these files.
 2. Keep `.github/workflows/build-windows.yml`.
 3. Commit the changes.
 4. Actions → **Build Windows App** → **Run workflow**.
 5. Download the `LL-Match-Logger-Windows` artifact.
-6. Extract it and run:
+6. Extract it and run `LL-Match-Logger-1.2.2-portable.exe`.
 
-`LL-Match-Logger-1.2.1-portable.exe`
-
-The app itself also displays **v1.2.1** in the interface so the version being tested is unambiguous.
+The app itself also displays **v1.2.2** in the interface so the version being tested is unambiguous.

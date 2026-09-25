@@ -81,7 +81,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
  <div class="sidebar-bottom">
   <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
-  <div class="app-version">v1.2.1</div>
+  <div class="app-version">v1.2.2</div>
  </div>
 </aside>
 <main class="main">
@@ -381,36 +381,101 @@ async function getLineups(){
  try{
    const raw=(await fetchSkyPage(current.href)).text;
    const parsed=parseLineupText(raw,current);
-   if(!parsed.home.length&&!parsed.away.length)throw Error('No lineup names found');
+   if(parsed.home.length!==11 || parsed.away.length!==11)throw Error(`Incomplete line-up: ${parsed.home.length}/${parsed.away.length}`);
    db.sheets[current.id]={...getSheet(current),...parsed};saveDB();renderLineups();document.getElementById('loggerBanner').textContent='Team sheets loaded — Sky Sports line-ups imported.';toast('Sky Sports line-ups loaded');
  }catch(e){document.getElementById('loggerBanner').textContent='Sky Sports line-ups could not be read. Use Team Sheets for a manual fallback.';toast('Line-ups unavailable — use Team Sheets')}
  finally{document.getElementById('getLineupsBtn').textContent='⟳ Get Line-ups';document.getElementById('getLineupsBtn').disabled=false}
 }
 function parseLineupText(raw,f){
- // Sky is loaded in a hidden Chromium window, so line-up pages arrive as rendered HTML.
+ // Sky's Teams page has a predictable structure after the "Teams" heading:
+ // Image: <team>, <short team name>, then NUMBER/PLAYER pairs, followed by
+ // "Substitutes", then the second team's Image marker and the same structure.
+ // We deliberately ignore everything before "Teams" so navigation/league tables
+ // cannot be mistaken for players.
  let text=raw;
  try{const j=JSON.parse(raw);text=j.text||j.content||j.data?.content||raw}catch(e){}
  if(/<html[\s>]/i.test(String(text))){
-   try{const doc=new DOMParser().parseFromString(String(text),'text/html');text=doc.body?.innerText||doc.body?.textContent||text}catch(e){}
+   try{
+     const doc=new DOMParser().parseFromString(String(text),'text/html');
+     doc.querySelectorAll('img[alt]').forEach(img=>{
+       const alt=(img.getAttribute('alt')||'').trim();
+       if(alt){const marker=doc.createTextNode('\nImage: '+alt+'\n');img.replaceWith(marker)}
+     });
+     text=doc.body?.innerText||doc.body?.textContent||text;
+   }catch(e){}
  }
  text=String(text).replace(/\\n/g,'\n');
  const lines=text.split(/\n+/).map(x=>x.replace(/[*•]/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);
- const home=[],away=[];let side=null, mode='start';
- const teamMatch=(line,name)=>line.toLowerCase()===name.toLowerCase()||line.toLowerCase().includes(name.toLowerCase());
- function add(line,target){let m=line.match(/^(?:\(?(\d{1,2})\)?\s+)?(.+)$/);if(!m)return;let name=m[2].trim();if(!name||name.length>35)return;if(/^(manager|formation|substitutes|line-ups|lineups|match officials|match stats|home|away)$/i.test(name)||/^manager\s*:/i.test(name)||/^formation\s*:/i.test(name))return;target.push({num:m[1]||'',name})}
- for(let i=0;i<lines.length;i++){
+
+ const cleanTeam=s=>String(s||'').toLowerCase()
+   .replace(/[’']/g,'')
+   .replace(/\b(fc|afc|women|womens|ladies)\b/g,' ')
+   .replace(/[^a-z0-9]+/g,' ')
+   .trim();
+ const teamTokens=s=>cleanTeam(s).split(' ').filter(Boolean);
+ const teamMatches=(candidate,team)=>{
+   const a=cleanTeam(candidate), b=cleanTeam(team);
+   if(!a||!b)return false;
+   if(a===b||a.includes(b)||b.includes(a))return true;
+   const at=teamTokens(a),bt=teamTokens(b);
+   return at.length>0&&bt.length>0&&(at.every(x=>bt.includes(x))||bt.every(x=>at.includes(x)));
+ };
+ const isImageTeam=l=>/^image\s*:/i.test(l);
+ const imageTeamName=l=>String(l).replace(/^image\s*:\s*/i,'').trim();
+ const isNumber=l=>/^\d{1,3}$/.test(l);
+ const isEventLine=l=>/^\d{1,3}(?:\+\d+)?(?:st|nd|rd|th)?\s*'?\d*'?\s*minute(?:\s|$)/i.test(l)||/^\d+(?:\+\d+)?(?:st|nd|rd|th)?$/i.test(l);
+ const stopLine=l=>/^(match officials|key|match stats|latest .* odds|summary|live reporting)$/i.test(l);
+ const badPlayer=l=>/^(teams|substitutes|manager|formation|match officials|key|home|away|line-ups|lineups)$/i.test(l)||/^manager\s*:/i.test(l)||/^formation\s*:/i.test(l);
+
+ // Only inspect the actual Teams section. This prevents the page's navigation,
+ // league tables and other team names from ever entering the lineup arrays.
+ let teamsStart=lines.findIndex(l=>/^teams$/i.test(l));
+ if(teamsStart<0) return {home:[],away:[],homeSubs:[],awaySubs:[]};
+
+ const sections=[];
+ let currentSection=null;
+ for(let i=teamsStart+1;i<lines.length;i++){
    const l=lines[i];
-   if(teamMatch(l,f.home)){side='home';mode='start';continue}
-   if(teamMatch(l,f.away)){side='away';mode='start';continue}
-   if(/^substitutes$/i.test(l)){mode='subs';continue}
-   if(/^(manager|formation|match officials|match stats|live reporting|summary)$/i.test(l))continue;
-   if(side==='home'&&home.length<11)add(l,home); else if(side==='away'&&away.length<11)add(l,away);
-   else if(side==='home'&&mode==='subs')add(l,home); else if(side==='away'&&mode==='subs')add(l,away);
+   if(stopLine(l)) break;
+   if(isImageTeam(l)){
+     const label=imageTeamName(l);
+     const matchesHome=teamMatches(label,f.home);
+     const matchesAway=teamMatches(label,f.away);
+     if(matchesHome||matchesAway){
+       currentSection={side:matchesHome?'home':'away',label,starters:[],subs:[],mode:'starters'};
+       sections.push(currentSection);
+       continue;
+     }
+   }
+   if(!currentSection) continue;
+   if(/^substitutes$/i.test(l)){currentSection.mode='subs';continue;}
+   if(isImageTeam(l)){
+     // An unrelated image/team marker: do not let it bleed into the current team.
+     continue;
+   }
+   if(badPlayer(l)||/^image\s*:/i.test(l)) continue;
+
+   // Sky renders each player as two adjacent text lines: shirt number then name.
+   if(isNumber(l)){
+     let j=i+1;
+     while(j<lines.length && isEventLine(lines[j])) j++;
+     const name=lines[j];
+     if(name && !isNumber(name) && !badPlayer(name) && name.length<=60 && !/^image\s*:/i.test(name)){
+       const player={num:l,name:name.replace(/\s+\(c\)$/i,'').trim()};
+       currentSection[currentSection.mode==='subs'?'subs':'starters'].push(player);
+       i=j;
+     }
+   }
  }
- // de-duplicate and keep first 11 as starters, remainder as subs
- const ded=a=>{const seen=new Set();return a.filter(x=>{const k=x.num+'|'+x.name;if(seen.has(k))return false;seen.add(k);return true})}
- const H=ded(home),A=ded(away);
- return {home:H.slice(0,11),away:A.slice(0,11),homeSubs:H.slice(11),awaySubs:A.slice(11)}
+
+ const homeSection=sections.find(s=>s.side==='home');
+ const awaySection=sections.find(s=>s.side==='away');
+ return {
+   home:(homeSection?.starters||[]).slice(0,11),
+   away:(awaySection?.starters||[]).slice(0,11),
+   homeSubs:homeSection?.subs||[],
+   awaySubs:awaySection?.subs||[]
+ };
 }
 
 function camerasForLog(){const x=selectedLog();return x?(x.cameras||[]):[]}
