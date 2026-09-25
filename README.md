@@ -1,8 +1,8 @@
-# LL Match Logger — Windows Desktop App v1.2.2
+# LL Match Logger — Windows Desktop App v1.2.3
 
-This is **v1.2.2** of LL Match Logger, the standalone Windows desktop build for football live logging.
+This is **v1.2.3** of LL Match Logger, the standalone Windows desktop build for football live logging.
 
-## What changed in v1.2.2
+## What changed in v1.2.3
 
 - **Line-up parsing has been rewritten around Sky Sports' actual Teams section.** The parser ignores navigation, league tables and other team names before the Teams section.
 - It identifies the two match teams from Sky's team image markers, so Sky labels such as **B'mouth** do not break matching with the fixture's **Bournemouth** name.
@@ -32,6 +32,10 @@ This is **v1.2.2** of LL Match Logger, the standalone Windows desktop build for 
 3. Commit the changes.
 4. Actions → **Build Windows App** → **Run workflow**.
 5. Download the `LL-Match-Logger-Windows` artifact.
-6. Extract it and run `LL-Match-Logger-1.2.2-portable.exe`.
+6. Extract it and run `LL-Match-Logger-1.2.3-portable.exe`.
 
-The app itself also displays **v1.2.2** in the interface so the version being tested is unambiguous.
+The app itself also displays **v1.2.3** in the interface so the version being tested is unambiguous.
+
+
+## v1.2.3
+Line-up retrieval now opens the Sky Sports Teams-tab URL (`/teams/<match-id>`) before parsing. v1.2.2 was parsing the base match-centre URL, which can omit the Teams section. The in-app error banner now shows the parsed starter counts if a future Sky markup change causes a failure.

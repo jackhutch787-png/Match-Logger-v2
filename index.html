@@ -81,7 +81,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
  <div class="sidebar-bottom">
   <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
-  <div class="app-version">v1.2.2</div>
+  <div class="app-version">v1.2.3</div>
  </div>
 </aside>
 <main class="main">
@@ -375,15 +375,31 @@ function renderLineups(){
 }
 function playerBtn(side,p,team,sub=false){const id=esc(side+'|'+p.num+'|'+p.name);return `<button class="player" data-player="${id}" data-name="${esc(p.name)}" data-team="${esc(team)}"><span class="num">${esc(p.num)}</span><span class="pname">${esc(p.name)}</span></button>`}
 
+function skyTeamsUrl(href){
+ const u=localHref(href);
+ if(!u)return '';
+ try{
+   const x=new URL(u);
+   if(/\/teams\//i.test(x.pathname))return x.href;
+   const m=x.pathname.match(/^(\/football\/[^/]+)\/(\d+)\/?$/i);
+   if(m){x.pathname=`${m[1]}/teams/${m[2]}`;return x.href}
+   return x.href;
+ }catch(e){return u}
+}
 async function getLineups(){
  if(!current?.href){toast('This fixture has no Sky Sports match link yet.');return}
  document.getElementById('getLineupsBtn').textContent='Loading…';document.getElementById('getLineupsBtn').disabled=true;
  try{
-   const raw=(await fetchSkyPage(current.href)).text;
+   const teamsUrl=skyTeamsUrl(current.href);
+   const raw=(await fetchSkyPage(teamsUrl)).text;
    const parsed=parseLineupText(raw,current);
    if(parsed.home.length!==11 || parsed.away.length!==11)throw Error(`Incomplete line-up: ${parsed.home.length}/${parsed.away.length}`);
    db.sheets[current.id]={...getSheet(current),...parsed};saveDB();renderLineups();document.getElementById('loggerBanner').textContent='Team sheets loaded — Sky Sports line-ups imported.';toast('Sky Sports line-ups loaded');
- }catch(e){document.getElementById('loggerBanner').textContent='Sky Sports line-ups could not be read. Use Team Sheets for a manual fallback.';toast('Line-ups unavailable — use Team Sheets')}
+ }catch(e){
+   const detail=String(e?.message||e||'Unknown error');
+   document.getElementById('loggerBanner').textContent=`Sky Sports line-ups could not be read (${detail}). Use Team Sheets for a manual fallback.`;
+   toast('Line-ups unavailable — use Team Sheets');
+ }
  finally{document.getElementById('getLineupsBtn').textContent='⟳ Get Line-ups';document.getElementById('getLineupsBtn').disabled=false}
 }
 function parseLineupText(raw,f){
