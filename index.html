@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LL Match Logger — Sky Sports</title>
+<style>
+:root{
+ --bg:#081019;--panel:#101a25;--panel2:#14202c;--panel3:#182735;--line:#223140;
+ --text:#eef3f7;--muted:#7f8d9b;--blue:#2f83f5;--blue2:#165ebd;--green:#55d68f;
+ --yellow:#f4c542;--red:#ef6262;--input:#0d1721;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:13px}
+button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:default}
+.app{height:100vh;display:flex}
+.sidebar{width:158px;flex:0 0 158px;background:#0d1721;border-right:1px solid #182532;display:flex;flex-direction:column}
+.brand{height:54px;display:flex;align-items:center;padding:0 17px;font-weight:850;font-size:14px}
+.brandmark{color:#55d68f;font-size:20px;margin-right:7px}.brand span{color:#f3f7fa}
+.nav{padding:8px 10px}.nav button{width:100%;border:0;background:none;color:#7e8c99;text-align:left;border-radius:7px;padding:9px 10px;margin:2px 0;font-size:11px;font-weight:700}
+.nav button:hover{background:#142331;color:#dfe8ee}.nav button.active{background:#124b96;color:#fff}
+.sidebar-bottom{margin-top:auto;padding:12px 16px;color:#7e8c99;font-size:9px}
+.switchrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.switch{width:30px;height:17px;border-radius:20px;background:#31404d;position:relative}.switch.on{background:#2381ef}.switch:after{content:"";position:absolute;top:3px;left:3px;width:11px;height:11px;border-radius:50%;background:#fff;transition:.12s}.switch.on:after{left:16px}
+.save-status{display:flex;gap:6px;align-items:center}.app-version{margin-top:7px;color:#52616e;font-size:8px;font-weight:700}.save-dot{width:6px;height:6px;border-radius:50%;background:#52d48c}
+.main{flex:1;min-width:0;height:100vh;display:flex;flex-direction:column}
+.top{height:42px;flex:0 0 42px;border-bottom:1px solid #182532;display:flex;align-items:center;padding:0 14px}
+.top-spacer{flex:1}.top-status{font-size:9px;color:#6f8090;border:1px solid #1c2a37;border-radius:20px;padding:5px 9px}
+.content{flex:1;min-height:0;padding:13px;overflow:auto}
+.view{display:none;height:100%}.view.active{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:9px}
+.btn{border:1px solid var(--line);background:#14212c;color:#dfe7ed;border-radius:7px;padding:8px 11px;font-size:10px;font-weight:750}.btn:hover{background:#1b2a37}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{color:#ff7777}.btn.small{padding:5px 8px;font-size:9px}
+input,select,textarea{background:var(--input);color:var(--text);border:1px solid #253544;border-radius:6px;padding:8px 9px;outline:0}input:focus,select:focus,textarea:focus{border-color:#377fc9}
+.page-head{display:flex;align-items:center;margin-bottom:11px}.page-head h1{font-size:19px;margin:0}.page-head .sub{font-size:9px;color:var(--muted);margin-top:3px}.page-actions{margin-left:auto;display:flex;gap:7px}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin-bottom:10px}.tabs button{border:0;background:none;color:#7f8d9b;padding:8px 4px;font-size:10px;font-weight:750}.tabs button.active{color:#e9f0f5;border-bottom:2px solid #3788ef}
+.filters{display:flex;gap:7px;margin-bottom:10px}.filters select{width:170px}.filters input{width:155px}.filters .btn{padding:7px 10px}
+.day-label{font-size:9px;color:#8493a1;text-transform:uppercase;font-weight:800;margin:12px 2px 5px}
+.fixture-list{display:flex;flex-direction:column;gap:4px}
+.fixture{width:100%;display:grid;grid-template-columns:82px 42px 1fr;align-items:center;border:1px solid #202e3b;background:#101a25;color:var(--text);border-radius:7px;padding:8px 11px;text-align:left}
+.fixture:hover{background:#152431;border-color:#2e4557}.fixture .ftime{font-weight:850;font-size:10px}.fixture .fdate{font-size:8px;color:#687886;margin-top:2px}.fixture .comp{font-size:8px;color:#8a98a4}.fixture .teams{font-size:10px;font-weight:700}.fixture .teams span{color:#5f7180;margin:0 6px}.fixture .bar{width:3px;height:22px;background:#267be8;display:inline-block;margin-right:8px;border-radius:2px;vertical-align:middle}
+.match-shell{height:100%;display:flex;flex-direction:column;min-height:0}
+.match-head{display:grid;grid-template-columns:180px 1fr auto auto auto auto;gap:14px;align-items:center;padding:11px 13px;margin-bottom:7px}
+.label{font-size:8px;color:#71818f;text-transform:uppercase;letter-spacing:.9px;font-weight:850}.match-value{font-size:11px;font-weight:800;margin-top:4px}.tc{color:#2e8bff;font-size:14px;font-weight:850;font-variant-numeric:tabular-nums}
+.banner{padding:8px 11px;background:#092b1c;border:1px solid #174b31;color:#62d995;border-radius:7px;font-size:9px;font-weight:700;margin-bottom:7px}
+.match-grid{flex:1;min-height:0;display:grid;grid-template-columns:260px minmax(500px,1fr);gap:7px}
+.lineup-card,.logger-card{min-height:0;overflow:hidden}
+.lineup-card{display:flex;flex-direction:column}.lineup-head{display:grid;grid-template-columns:1fr 1fr}.teamtab{padding:9px 6px;text-align:center;font-size:10px;font-weight:850;border-bottom:1px solid var(--line);background:#172330}.teamtab.home{background:#0758a9}.teamtab.away{background:#e9edf0;color:#101820}
+.lineups{flex:1;overflow:auto;padding:5px}
+.player{width:100%;display:grid;grid-template-columns:27px 1fr;border:0;border-bottom:1px solid #1b2936;background:transparent;color:#dbe4ea;padding:5px 7px;text-align:left;font-size:9px}.player:hover{background:#182a3a}.player .num{color:#82909d}.player .pname{font-weight:700}.player.selected{background:#173c68;color:#fff}
+.subs-label{text-align:center;color:#81909d;font-size:8px;font-weight:850;padding:6px 0 4px}.manual-edit{margin:6px}.search-player{margin:5px 6px}.search-player input{width:100%;font-size:9px}
+.logger-card{display:flex;flex-direction:column}
+.keyword-row{display:grid;grid-template-columns:1fr 145px;gap:7px;padding:7px}
+.keywords{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.cam{border:1px solid #243442;background:#14202b;color:#cfd9e0;border-radius:5px;padding:5px 2px;font-size:8px;font-weight:800}.cam.active{background:#174f86;border-color:#3c9aff;color:#fff}.keyword{border:1px solid #243442;background:#14202b;color:#d6e0e7;border-radius:6px;padding:7px 6px;text-align:left;font-size:8px;font-weight:750;min-height:30px}.keyword:hover{background:#1b2a37}.keyword.active{border-color:#2f8bf7;background:#17395f;color:#fff}.keyword.red.active{border-color:#e95d5d;background:#552327}.keyword.yellow.active{border-color:#e6bd39;background:#4d421b}
+.rating{border:1px solid var(--line);background:#121d28;border-radius:7px;padding:5px}.rating h4{font-size:8px;color:#728290;margin:2px 5px 5px;text-transform:uppercase}.ratebtn{width:100%;border:1px solid #263644;background:#15212c;color:#f3c844;border-radius:6px;margin:3px 0;padding:6px;font-size:10px}.ratebtn span{display:block;font-size:7px;color:#788895;margin-top:2px}
+.event-wrap{flex:1;min-height:0;border:1px solid var(--line);margin:0 7px 7px;border-radius:7px;display:flex;flex-direction:column;overflow:hidden}
+.event-title{display:flex;align-items:center;padding:8px 9px;border-bottom:1px solid var(--line);font-size:9px;font-weight:850;color:#81909d}.event-title input{margin-left:auto;width:145px;padding:5px 7px;font-size:8px}
+.event-table{width:100%;border-collapse:collapse;font-size:8px}.event-table th{text-align:left;color:#738390;font-size:7px;text-transform:uppercase;padding:7px;border-bottom:1px solid #202e3a}.event-table td{padding:6px 7px;border-bottom:1px solid #192733;vertical-align:middle}.event-table tr.active{background:#18365a}.event-table tr:hover{background:#142a40}.event-table input{width:100%;padding:5px;font-size:8px}.xbtn{border:0;background:none;color:#657582;font-size:12px}.xbtn:hover{color:#ff7474}
+.log-footer{padding:6px 9px;display:flex;gap:20px;color:#7d8b97;font-size:8px;border-top:1px solid var(--line)}.log-footer b{color:#e7edf1}.log-footer .clear{margin-left:auto;color:#ff7777;border:1px solid #4d2930;background:#21151a;border-radius:6px;padding:5px 7px}
+.home-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:8px}.stat{padding:11px;background:var(--panel);border:1px solid var(--line);border-radius:8px}.stat .n{font-size:20px;color:#4c9eff;font-weight:850}.stat .l{font-size:7px;color:#738390;text-transform:uppercase;margin-top:2px}
+.report-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}.report-head h2{font-size:14px}.report-filters{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:9px;margin-bottom:8px}.report-table{width:100%;border-collapse:collapse;font-size:8px}.report-table th,.report-table td{padding:7px;border-bottom:1px solid #1d2a36;text-align:left}.report-table th{color:#71818e;text-transform:uppercase;font-size:7px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:100}.modal.open{display:flex}.modalbox{width:min(680px,92vw);max-height:88vh;overflow:auto;background:#111b26;border:1px solid #2a3948;border-radius:10px;padding:14px}.modalbox h3{margin:0;font-size:14px}.modal-head{display:flex;align-items:center;margin-bottom:12px}.modal-head .close{margin-left:auto}
+.team-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.team-edit textarea{width:100%;height:260px;resize:vertical;font-size:9px;line-height:1.6}.modal-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:10px}
+.interview-layout{height:100%;display:flex;flex-direction:column}.interview-head{display:flex;align-items:center;padding:11px 13px;margin-bottom:7px}.interview-head .right{margin-left:auto;display:flex;gap:25px;align-items:center}.interview-grid{flex:1;min-height:0;display:grid;grid-template-columns:330px minmax(500px,1fr);gap:7px}.interviews-left{display:flex;flex-direction:column;padding:8px}.interview-list{flex:1;overflow:auto}.interview-item{padding:10px;border-bottom:1px solid #1d2a36;font-size:9px}.interview-item.active{background:#173c68}.interview-controls{margin-top:auto;display:flex;flex-direction:column;gap:7px}.mark{height:44px;font-size:13px;font-weight:900}.interview-topics{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.topic{border:1px solid #243442;background:#14202b;color:#d6e0e7;border-radius:6px;padding:8px;font-size:8px;text-align:left}.topic.active{background:#17395f;border-color:#2f8bf7}.interview-main{display:flex;flex-direction:column}.quote-input{width:100%}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.setting{padding:13px}.setting h3{font-size:11px;margin:0 0 5px}.setting p{font-size:9px;color:#7f8e9b;line-height:1.5}.setting-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.toast{position:fixed;bottom:18px;right:18px;background:#152431;border:1px solid #33516a;color:#eaf2f8;border-radius:7px;padding:8px 11px;font-size:9px;opacity:0;transform:translateY(6px);pointer-events:none;transition:.15s;z-index:200}.toast.show{opacity:1;transform:none}
+@media(max-width:1000px){.sidebar{width:130px;flex-basis:130px}.match-grid{grid-template-columns:225px minmax(420px,1fr)}.keywords{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+ <div class="brand"><span class="brandmark">✓</span> LL Match Logger</div>
+ <nav class="nav">
+  <button data-view="logger" class="active">▣ &nbsp; Logger</button>
+  <button data-view="matches">▦ &nbsp; Matches</button>
+  <button data-view="reports">▥ &nbsp; Reports</button>
+  <button data-view="interviews">♟ &nbsp; Interview Logger</button>
+  <button data-view="settings">⚙ &nbsp; Settings</button>
+ </nav>
+ <div class="sidebar-bottom">
+  <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
+  <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
+  <div class="app-version">v1.2.1</div>
+ </div>
+</aside>
+<main class="main">
+ <div class="top"><div class="top-spacer"></div><div class="top-status" id="globalStatus">Sky Sports data · ready</div></div>
+ <div class="content">
+
+  <section id="matchesView" class="view">
+   <div class="page-head"><div><h1>Matches</h1><div class="sub" id="fixtureCount">Sky Sports supported fixtures</div></div><div class="page-actions"><button class="btn" id="refreshBtn">Refresh fixtures</button><button class="btn blue" id="manualBtn">Manual match</button></div></div>
+   <div class="tabs"><button class="active" data-matchtab="fixtures">Fixtures</button><button data-matchtab="saved">Saved logs</button></div>
+   <div id="fixturesTab">
+    <div class="filters"><select id="compFilter"><option value="ALL">All supported competitions</option></select><input id="teamSearch" placeholder="Search team..."><button class="btn" id="todayBtn">Today</button><input id="dateInput" type="date"></div>
+    <div id="fixtureList" class="fixture-list"></div>
+   </div>
+   <div id="savedTab" style="display:none"></div>
+  </section>
+
+  <section id="loggerView" class="view active">
+   <div class="match-shell">
+    <div class="match-head card">
+     <div><div class="label">Competition</div><select id="loggerComp" style="width:170px"></select></div>
+     <div><div class="label">Match</div><div class="match-value" id="loggerMatch">No match selected</div></div>
+     <div><div class="label">Date</div><div class="match-value" id="loggerDate">—</div></div>
+     <div><div class="label">Kick-off</div><div class="match-value" id="loggerKick">—</div></div>
+     <div><div class="label">Time Code</div><div class="tc" id="globalTc">00:00:00:00</div></div>
+     <button class="btn" id="newMatchBtn">◉ New Match</button><button class="btn blue" id="getLineupsBtn">⟳ Get Line-ups</button><button class="btn" id="teamSheetsBtn">✎ Team Sheets</button>
+    </div>
+    <div class="banner" id="loggerBanner">Select a fixture from Matches to begin.</div>
+    <div class="match-grid">
+     <aside class="card lineup-card">
+      <div class="lineup-head"><div class="teamtab home" id="homeTeam">HOME</div><div class="teamtab away" id="awayTeam">AWAY</div></div>
+      <div class="lineups" id="lineups"></div>
+      <button class="btn small manual-edit" id="editTeamsBtn">✎ Edit teams manually</button>
+      <div class="search-player"><input id="playerSearch" placeholder="⌕ Search player..."></div>
+     </aside>
+     <section class="card logger-card">
+      <div class="keyword-row">
+       <div class="keywords" id="keywords"></div>
+       <div class="rating"><h4>Star rating</h4><button class="ratebtn" data-rate="1">★<span>ONE STAR</span></button><button class="ratebtn" data-rate="2">★★<span>TWO STAR</span></button><button class="ratebtn" data-rate="3">★★★<span>THREE STAR</span></button><div style="font-size:7px;color:#748390;padding:3px">Player → keyword → rating. Press 1, 2, 3.</div></div>
+      </div>
+      <div style="padding:0 7px 7px"><div class="label" style="margin-bottom:5px">Cameras <span style="color:#536575;font-weight:600;text-transform:none;letter-spacing:0">(select after choosing a player)</span></div><div id="cameraButtons" style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px"></div><div style="display:flex;gap:5px;margin-top:5px"><input id="customCamera" placeholder="Custom camera e.g. RF2" style="flex:1;padding:6px;font-size:8px"><button class="btn small" id="addCamera">Add custom</button><input id="evsInput" placeholder="EVS clip number" style="width:130px;padding:6px;font-size:8px"><button class="btn small" id="saveLogMeta">Save meta</button></div></div>
+      <div class="event-wrap">
+       <div class="event-title">EVENT LOG <input id="eventSearch" placeholder="Filter this log..."></div>
+       <div style="flex:1;min-height:0;overflow:auto"><table class="event-table"><thead><tr><th>Clip number</th><th>Time code</th><th>Player</th><th>Team</th><th>Event</th><th>Cameras</th><th>EVS</th><th>Rating</th><th>Notes</th><th></th></tr></thead><tbody id="eventBody"></tbody></table></div>
+       <div class="log-footer"><span>Events <b id="eventCount">0</b></span><span id="homeCount">Home 0</span><span id="awayCount">Away 0</span><button class="btn small" id="exportBtn">Export CSV</button><button class="clear" id="clearLogBtn">▣ Clear Log</button></div>
+      </div>
+     </section>
+    </div>
+   </div>
+  </section>
+
+  <section id="reportsView" class="view">
+   <div class="page-head"><div><h1>Match Log</h1><div class="sub" id="reportMatchSub">Choose a match</div></div><div class="page-actions"><input id="reportGlobalSearch" placeholder="⌕ Search a player across every match..."></div></div>
+   <div class="summary" id="reportSummary"></div>
+   <div class="card report-filters"><select id="rPlayer"><option>Any player</option></select><select id="rEvent"><option>Any event</option></select><select id="rTeam"><option>Any team</option></select><select id="rRating"><option>Any</option><option>1</option><option>2</option><option>3</option></select><button class="btn" id="resetReports">Reset filters</button></div>
+   <div class="card" style="overflow:auto;max-height:calc(100vh - 200px)"><table class="report-table"><thead><tr><th>Clip number</th><th>Time code</th><th>Player</th><th>Team</th><th>Event</th><th>Rating</th><th>Notes</th></tr></thead><tbody id="reportBody"></tbody></table></div>
+  </section>
+
+  <section id="interviewsView" class="view">
+   <div class="interview-layout">
+    <div class="card interview-head"><div><div class="label">Match</div><div class="match-value" id="intMatch">No match selected</div></div><div class="right"><div><div class="label">Interview</div><div id="intSpeaker">—</div></div><div><div class="label">Time of day</div><div class="tc" id="intTod">00:00:00:00</div></div><div><div class="label">Interview time</div><div style="color:#4ed78d;font-weight:850" id="intDur">00:00</div></div><button class="btn" id="intBack">← Back to match selection</button></div></div>
+    <div class="banner">Interview logger: start an interview, then press MARK as each answer ends and the next question starts.</div>
+    <div class="interview-grid">
+     <aside class="card interviews-left"><div class="label" style="padding:4px">Interviews</div><div class="interview-list" id="intList"></div><button class="btn small" id="addInterview">⊕ Add interview</button><div class="interview-controls"><button class="btn blue" id="startInterview">Start I/V Log</button><button class="btn blue mark" id="markInterview">MARK <span style="font-size:8px">space</span></button><button class="btn danger" id="endInterview">End I/V Log</button></div></aside>
+     <section class="card interview-main">
+      <div style="padding:10px"><div class="label" style="margin-bottom:7px">Topics</div><div class="interview-topics" id="topics"></div></div>
+      <div class="event-wrap" style="margin-top:0"><div class="event-title">INTERVIEW LOG <input id="intSearch" placeholder="Filter this log..."></div><div style="flex:1;overflow:auto"><table class="event-table"><thead><tr><th>Clip number</th><th>Time of day</th><th>I/V time</th><th>Speaker</th><th>Topic</th><th>Rating</th><th>Quote</th><th></th></tr></thead><tbody id="intBody"></tbody></table></div><div class="log-footer"><span>Entries <b id="intCount">0</b></span><span>Duration <b id="intFooterDur">00:00</b></span><button class="clear" id="clearInt">▣ Clear Log</button></div></div>
+     </section>
+    </div>
+   </div>
+  </section>
+
+  <section id="settingsView" class="view">
+   <div class="page-head"><div><h1>Settings</h1><div class="sub">Logger preferences and Sky Sports data connection</div></div></div>
+   <div class="settings-grid">
+    <div class="card setting"><h3>Data source</h3><p>This build uses Sky Sports' football Scores & Fixtures pages as the primary source. Match links point back to Sky Sports match centres for line-up retrieval when available.</p><div class="setting-row"><span>Fixture source</span><b>Sky Sports</b></div><div class="setting-row"><span>Local saving</span><b>On</b></div></div>
+    <div class="card setting"><h3>Connection</h3><p>A local HTML file may be blocked by browser CORS or a corporate network. The logger queries only the nine supported Sky Sports competition pages. Successful results are cached by date so a temporary network failure cannot wipe the fixture list. No BBC endpoint is used.</p><button class="btn" id="testSky">Test Sky Sports connection</button><div id="testResult" class="sub" style="margin-top:8px">Not tested.</div></div>
+    <div class="card setting"><h3>Logging behaviour</h3><div class="setting-row"><span>Player click creates event instantly</span><span class="switch on"></span></div><div class="setting-row"><span>Timestamp is captured on click</span><span class="switch on"></span></div><div class="setting-row"><span>Time code format</span><b>HH:MM:SS:FF</b></div></div>
+    <div class="card setting"><h3>Storage</h3><p>Logs and manually entered team sheets stay in this browser on this device.</p><button class="btn danger" id="wipeData">Clear all saved logger data</button></div>
+   </div>
+  </section>
+ </div>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="manualModal"><div class="modalbox"><div class="modal-head"><h3>New match</h3><button class="btn small close">Close</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="mComp" placeholder="Competition"><input id="mDate" type="date"><input id="mHome" placeholder="Home team"><input id="mAway" placeholder="Away team"><input id="mKick" placeholder="Kick-off e.g. 19:45"><input id="mHref" placeholder="Sky Sports match URL (optional)"></div><div class="modal-actions"><button class="btn blue" id="createManual">Create match</button></div></div></div>
+
+<div class="modal" id="teamModal"><div class="modalbox"><div class="modal-head"><h3>Team Sheets</h3><button class="btn small close">Close</button></div><div class="team-edit-grid"><div class="team-edit"><div class="label">Home starters (one per line: number name)</div><textarea id="homeSheet"></textarea><div class="label" style="margin-top:8px">Home substitutes</div><textarea id="homeSubs"></textarea></div><div class="team-edit"><div class="label">Away starters (one per line: number name)</div><textarea id="awaySheet"></textarea><div class="label" style="margin-top:8px">Away substitutes</div><textarea id="awaySubs"></textarea></div></div><div class="modal-actions"><button class="btn blue" id="saveSheets">Save team sheets</button></div></div></div>
+
+<div class="modal" id="interviewModal"><div class="modalbox" style="width:min(600px,92vw)"><div class="modal-head"><h3>New Interview</h3><button class="btn small close">Close</button></div><div class="label">Competition</div><select id="intComp" style="width:100%;margin:5px 0 9px"></select><div class="label">Match</div><select id="intMatchSelect" style="width:100%;margin:5px 0 9px"></select><div class="label">Speaker</div><input id="intSpeakerInput" placeholder="e.g. Cole Palmer" style="width:100%;margin:5px 0"><div class="modal-actions"><button class="btn blue" id="createInterview">Start</button></div></div></div>
+
+<script>
+const SKY_DAILY='https://www.skysports.com/football-scores-fixtures/';
+const STORE='LLMatchLoggerSkyDesktopV2';
+const COMPETITIONS=['Premier League','Championship','League One','League Two','WSL','EFL Trophy','Carabao Cup','UEFA Europa League','UEFA Europa Conference League'];
+const COMP_ALIASES={
+ 'Premier League':'premier league',
+ 'Championship':'championship',
+ 'League One':'league one',
+ 'League Two':'league two',
+ 'WSL':"women's super league",
+ 'EFL Trophy':'efl trophy',
+ 'Carabao Cup':'carabao cup',
+ 'UEFA Europa League':'uefa europa league',
+ 'UEFA Europa Conference League':'uefa europa conference league'
+};
+
+const KEYWORDS=['GOAL','SHOT','CHANCE','CROSS','TACKLE','INTERCEPTION','CLEARANCE','RUN / SKILL','PASS','POST / BAR HIT','TEAM SHAPE','PRESSING','HOLD UP PLAY','FOUL','PENALTY INCIDENT','SAVE','AERIAL DUEL','WING PLAY','CLOSE UP','YELLOW CARD','RED CARD','SUBSTITUTION','BLOCK','PASSING FROM BACK'];
+const TOPICS=['TEAM NEWS','INJURY','TRANSFER','CONTRACT','PERFORMANCE','TACTICS','REFEREE / VAR','PRAISE','CRITICISM','EMOTIONAL','CONTROVERSY','FUTURE / NEXT GAME','FANS','OWNERSHIP','INDIVIDUAL PLAYER','QUOTE OF THE DAY'];
+
+let db=loadDB(), fixtures=[], current=null, activeEventId=null, currentTab='fixtures', interviewState=null, fixtureSourceState='';
+function emptyDB(){return {logs:{},sheets:{},manual:[],interviews:{},settings:{},cameraPresets:{},fixtureCache:{}}}
+function loadDB(){try{const x=JSON.parse(localStorage.getItem(STORE));return x?{...emptyDB(),...x,fixtureCache:x.fixtureCache||{}}:emptyDB()}catch(e){return emptyDB()}}
+function saveDB(){localStorage.setItem(STORE,JSON.stringify(db));document.getElementById('saveStatus').textContent='Saved '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+
+function nowTc(){const d=new Date();const ff=Math.floor(d.getMilliseconds()/40);return [d.getHours(),d.getMinutes(),d.getSeconds(),ff].map(n=>String(n).padStart(2,'0')).join(':')}
+function tick(){document.getElementById('globalTc').textContent=nowTc();document.getElementById('globalStatus').textContent=fixtureSourceState|| (fixtures.length?`${fixtures.length} fixtures`:'Sky Sports · ready');if(interviewState?.running){document.getElementById('intTod').textContent=nowTc();document.getElementById('intDur').textContent=fmtDur((Date.now()-interviewState.started)/1000)}}setInterval(tick,40);tick();
+function fmtDur(s){s=Math.max(0,Math.floor(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>e.classList.remove('show'),1800)}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function today(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London'}).format(new Date())}
+function ukDateObj(s){return new Date(s+'T12:00:00')}
+function localHref(h){if(!h)return'';if(h.startsWith('http'))return h;if(h.startsWith('//'))return 'https:'+h;return 'https://www.skysports.com'+(h.startsWith('/')?h:'/'+h)}
+
+async function getTextDirect(url){
+ if(window.llBridge?.fetchSky){const x=await window.llBridge.fetchSky(url);if(!x?.html||x.html.length<200)throw Error('Empty Sky page');return x.html}
+ const r=await fetch(url,{cache:'no-store',credentials:'omit'});if(!r.ok)throw Error('HTTP '+r.status);const t=await r.text();if(t.length<200)throw Error('Empty response');return t
+}
+async function fetchSkyPage(url){
+ if(window.llBridge?.fetchSky){try{return {text:await getTextDirect(url),via:'native-rendered'}}catch(e){throw Error('Sky Sports could not be reached by the desktop app: '+e.message)}}
+ throw Error('Sky Sports desktop connection unavailable');
+}
+function cleanText(x){return String(x||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim()}
+function today(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London'}).format(new Date())}
+function localHref(h){if(!h)return'';if(h.startsWith('http'))return h;if(h.startsWith('//'))return 'https:'+h;return 'https://www.skysports.com'+(h.startsWith('/')?h:'/'+h)}
+function dateHeadingToISO(text,year){
+ const m=cleanText(text).match(/^(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+(\d{1,2})(?:st|nd|rd|th)\s+(January|February|March|April|May|June|July|August|September|October|November|December)(?:\s+(\d{4}))?$/i);
+ if(!m)return null;const months={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};return `${m[3]||year}-${String(months[m[2].toLowerCase()]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`
+}
+function normalizeCompetition(text){
+ const t=cleanText(text).toLowerCase().replace(/\s+/g,' ');
+ if(t.includes('premier league') && !t.includes('women'))return 'Premier League';
+ if(t.includes('championship') && !t.includes('scottish'))return 'Championship';
+ if(t.includes('league one') && !t.includes('scottish'))return 'League One';
+ if(t.includes('league two') && !t.includes('scottish'))return 'League Two';
+ if(t.includes("women's super league") || t.includes('women’s super league'))return 'WSL';
+ if(t.includes('efl trophy'))return 'EFL Trophy';
+ if(t.includes('carabao cup') || t.includes('efl cup'))return 'Carabao Cup';
+ if(t.includes('europa conference league') && !t.includes('women'))return 'UEFA Europa Conference League';
+ if(t.includes('europa league') && !t.includes('conference') && !t.includes('women'))return 'UEFA Europa League';
+ return null;
+}
+function makeFixture(home,away,time,comp,date,href='',raw=''){
+ home=cleanText(home).replace(/^.*?(?:app\.football\.scores_fixtures\.[a-z_]+\s+)+/i,'').trim();
+ away=cleanText(away).replace(/\s+(?:Kick-off at.*)$/i,'').trim();
+ if(!home||!away||home.length>70||away.length>70||home.toLowerCase()===away.toLowerCase())return null;
+ const key=`${comp}|${home}|${away}|${time||''}`.toLowerCase();
+ return {home,away,time:cleanText(time||''),comp,date,href:localHref(href||''),status:/postponed/i.test(raw)?'Postponed':'',id:'sky_'+btoa(unescape(encodeURIComponent(key))).replace(/[^a-z0-9]/gi,'').slice(0,28)};
+}
+function fixtureFromRaw(raw,comp,date,href=''){
+ raw=cleanText(raw); if(!raw)return null;
+ raw=raw.replace(/app\.football\.scores_fixtures\.[a-z_]+/gi,' ').replace(/\s+/g,' ').trim();
+ // Scheduled fixture: Team A vs Team B Kick-off at 3:00pm
+ let m=raw.match(/^(.+?)\s+vs\s+(.+?)(?:\s+Kick-off at\s+([0-9:.]+(?:am|pm)))?\s*\.?$/i);
+ if(m)return makeFixture(m[1],m[2],m[3]||'',comp,date,href,raw);
+ // Postponed fixture: Team A P Team B P
+ m=raw.match(/^(.+?)\s+P\s+(.+?)\s+P(?:\s+Postponed.*)?$/i);
+ if(m)return makeFixture(m[1],m[2],'',comp,date,href,raw+' Postponed');
+ // Completed/live fixture: Team A 2 Team B 1 FT/HT/AET or a live minute.
+ // Use the first two standalone score numbers and strip the status suffix.
+ m=raw.match(/^(.+?)\s+(\d+)\s+(.+?)\s+(\d+)\s+(?=(?:FT|HT|AET|\d+\s*\+\s*\d+\'|\d+\'|$))/i);
+ if(m){
+   const status=raw.slice(m[0].length).trim();
+   return makeFixture(m[1],m[3],'',comp,date,href,raw+' '+status);
+ }
+ return null;
+}
+function fixtureFromAnchor(a,comp,date){
+ const parent=a.closest('li,article,div') || a.parentElement || a;
+ const parentText=cleanText(parent.innerText||parent.textContent||'');
+ const candidates=[a.getAttribute('aria-label'),a.getAttribute('title'),a.textContent,parentText].filter(Boolean);
+ for(const raw of candidates){
+   const f=fixtureFromRaw(raw,comp,date,a.getAttribute('href')||a.href||'');
+   if(f)return f;
+ }
+ return null;
+}
+function parseSkyDailyPage(raw,date){
+ const out=[],seen=new Set();
+ const doc=new DOMParser().parseFromString(String(raw),'text/html');
+ const add=(f)=>{if(!f)return;const key=`${f.comp}|${f.home}|${f.away}|${f.time}`.toLowerCase();if(seen.has(key))return;seen.add(key);out.push(f)};
+ // The Sky page URL is date-specific. Do not depend on Sky's calendar/date heading markup,
+ // which changes between rendered versions. Instead, identify supported competition sections
+ // and parse both scheduled and completed/live fixture formats within those sections.
+ let currentComp=null;
+ const elements=[...doc.body.querySelectorAll('h1,h2,h3,h4,h5,h6,a[href]')];
+ for(const el of elements){
+   const txt=cleanText(el.textContent||'');if(!txt)continue;
+   const c=normalizeCompetition(txt);
+   if(c){currentComp=c;continue}
+   if(el.tagName==='H1'||el.tagName==='H2'||el.tagName==='H3'||el.tagName==='H4'||el.tagName==='H5'||el.tagName==='H6'){
+     // Any other section heading ends the current supported competition block.
+     if(!c)currentComp=null;
+     continue;
+   }
+   if(currentComp&&el.tagName==='A')add(fixtureFromAnchor(el,currentComp,date));
+ }
+ // Body-text fallback. This handles Sky's accessible/rendered text even if fixture anchors
+ // are not nested under a predictable heading element.
+ let bodyComp=null;
+ for(const line of String(doc.body?.innerText||'').split(/\n+/).map(cleanText).filter(Boolean)){
+   const c=normalizeCompetition(line);
+   if(c){bodyComp=c;continue}
+   if(/^(?:View full .* table|Football Calendar|Go to today|Today|Yesterday|Tomorrow)$/i.test(line))continue;
+   // Recognise known non-supported competition headings so we don't leak their fixtures.
+   if(/^(?:UEFA Nations League|National League|Scottish Championship|Scottish League 1|Scottish League 2|National League North|National League South|International Match|Women's Super League 2|Friendly Match(?:es)?|Premier Sports Cup|The FA Trophy|Scottish Challenge Cup|Northern Irish Premiership|European Under-21 Championship Qualifying|League of Ireland Premier Division|Welsh Premier League|Spanish La Liga|Dutch Eredivisie|Belgian Pro League Football|Portuguese Primeira Liga|Finnish Veikkausliiga|Coppa Italia|Isthmian League|Northern Premier League|Southern Premier League.*|FA Trophy)$/i.test(line)){
+     bodyComp=null;continue;
+   }
+   if(bodyComp){
+     const f=fixtureFromRaw(line,bodyComp,date);add(f);
+   }
+ }
+ return out;
+}
+async function loadSkyFixtures(date){
+ const cache=db.fixtureCache?.[date]||{};
+ const url=SKY_DAILY+date;
+ const result=await fetchSkyPage(url);
+ const rows=parseSkyDailyPage(result.text,date);
+ // Hard isolation: never return anything outside the nine explicitly supported competitions.
+ const allowed=new Set(COMPETITIONS);const filtered=rows.filter(f=>allowed.has(f.comp));
+ if(filtered.length){
+   db.fixtureCache[date]={};for(const f of filtered){(db.fixtureCache[date][f.comp] ||= []).push(f)}saveDB();
+   return {rows:filtered,errors:[],via:[`daily:${result.via}`],url};
+ }
+ const cached=Object.values(cache).flat().filter(f=>allowed.has(f.comp));
+ return {rows:cached,errors:cached.length?['Sky returned no supported fixtures; cache used']:['No supported fixtures found on Sky for this date'],via:[`daily:${result.via}`],url};
+}
+async function refreshFixtures(){
+ const date=document.getElementById('dateInput').value||today();
+ document.getElementById('globalStatus').textContent='Loading supported Sky Sports competitions…';
+ document.getElementById('fixtureList').innerHTML='<div class="card" style="padding:15px;color:#82919e">Loading only the 9 supported competitions…</div>';
+ try{
+  const result=await loadSkyFixtures(date);fixtures=result.rows;
+  fixtureSourceState=result.errors.length?`Sky Sports · ${fixtures.length} fixtures · ${result.errors.length} cached/unavailable`: `Sky Sports · ${fixtures.length} fixtures`;
+  document.getElementById('fixtureCount').textContent=`${fixtures.length} supported fixtures for ${date}`;
+  populateCompFilters();renderFixtures();populateLoggerComp();
+  toast(result.errors.length?`Loaded ${fixtures.length}; some competitions used cache.`:`Loaded ${fixtures.length} supported fixtures`);
+ }catch(e){
+  const cached=Object.values(db.fixtureCache?.[date]||{}).flat();
+  fixtures=cached.length?cached:db.manual.filter(x=>x.date===date);
+  fixtureSourceState=cached.length?'Sky Sports unavailable · showing last successful fixtures':'Sky Sports unavailable · no cached fixtures';
+  document.getElementById('fixtureCount').textContent=cached.length?`${cached.length} cached supported fixtures for ${date}`:`No fixtures available for ${date}`;
+  populateCompFilters();renderFixtures();populateLoggerComp();
+  toast(cached.length?'Sky connection failed — keeping the last successful fixture list.':'Sky Sports could not be reached.');
+ }
+}
+function populateCompFilters(){const s=document.getElementById('compFilter');const cur=s.value;s.innerHTML='<option value="ALL">All supported competitions</option>'+COMPETITIONS.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');if(COMPETITIONS.includes(cur))s.value=cur}
+function populateLoggerComp(){const s=document.getElementById('loggerComp');s.innerHTML=COMPETITIONS.map(c=>`<option>${esc(c)}</option>`).join('');if(current)s.value=current.comp}
+function renderFixtures(){
+ const comp=document.getElementById('compFilter').value, q=document.getElementById('teamSearch').value.trim().toLowerCase();
+ const fs=fixtures.filter(f=>(comp==='ALL'||f.comp===comp)&&(!q||`${f.home} ${f.away}`.toLowerCase().includes(q)));
+ const groups={};fs.forEach(f=>(groups[f.date||document.getElementById('dateInput').value]??=[]).push(f));
+ const box=document.getElementById('fixtureList'); if(!fs.length){box.innerHTML='<div class="card" style="padding:15px;color:#7f8e9b">No fixtures found for this date/filter.</div>';return}
+ box.innerHTML=Object.entries(groups).map(([date,list])=>`<div><div class="day-label">${ukDateObj(date).toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</div>${list.map(f=>`<button class="fixture" data-fixture="${esc(f.id)}"><div><div class="ftime">${esc(f.time||'TBC')}</div><div class="fdate">${esc(date)}</div></div><div><span class="bar"></span><span class="comp">${esc(shortComp(f.comp))}</span></div><div class="teams">${esc(f.home)} <span>v</span> ${esc(f.away)}</div></button>`).join('')}</div>`).join('')
+}
+function shortComp(c){return c==='Premier League'?'PL':c==='Championship'?'CH':c==='League One'?'L1':c==='League Two'?'L2':c==='WSL'?'WSL':c==='EFL Trophy'?'ET':c==='Carabao Cup'?'CC':c==='UEFA Europa League'?'UEL':c==='UEFA Europa Conference League'?'UECL':c}
+
+function openFixture(f){
+ current=f;db.logs[f.id]=db.logs[f.id]||[];saveDB();showView('logger');
+ document.getElementById('loggerComp').value=f.comp;document.getElementById('loggerMatch').textContent=`${f.home} vs ${f.away}`;
+ document.getElementById('loggerDate').textContent=f.date?new Date(f.date+'T12:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+ document.getElementById('loggerKick').textContent=f.time||'TBC';
+ document.getElementById('homeTeam').textContent=(f.home||'HOME').toUpperCase();document.getElementById('awayTeam').textContent=(f.away||'AWAY').toUpperCase();
+ document.getElementById('loggerBanner').textContent=db.sheets[f.id]?'Team sheets loaded — continuing this match.':'Select a player to start logging.';
+ renderLineups();renderEvents();
+}
+function showView(name){
+ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(name+'View').classList.add('active');
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+ if(name==='reports')renderReports();if(name==='interviews')renderInterviewHome();
+}
+function getSheet(f){return db.sheets[f.id]||{home:[],away:[],homeSubs:[],awaySubs:[]}}
+function parseSheet(text){return String(text||'').split(/\n+/).map((x,i)=>{x=x.trim();if(!x)return null;let m=x.match(/^(\d+)\s+(.+)$/);return m?{num:m[1],name:m[2]}:{num:'',name:x}}).filter(Boolean)}
+function sheetText(a){return (a||[]).map(p=>(p.num?p.num+' ':'')+p.name).join('\n')}
+function renderLineups(){
+ const box=document.getElementById('lineups');if(!current){box.innerHTML='<div style="padding:12px;color:#7d8b98;font-size:9px">No match selected.</div>';return}
+ const s=getSheet(current);const q=document.getElementById('playerSearch').value.toLowerCase();
+ const block=(side,team,players,subs)=>`<div style="font-size:7px;color:#71818f;padding:5px 7px;text-transform:uppercase;font-weight:850">${esc(team)}</div>${players.filter(p=>!q||p.name.toLowerCase().includes(q)).map(p=>playerBtn(side,p,team)).join('')}<div class="subs-label">SUBS</div>${subs.filter(p=>!q||p.name.toLowerCase().includes(q)).map(p=>playerBtn(side,p,team,true)).join('')}`;
+ box.innerHTML=block('home',current.home,s.home||[],s.homeSubs||[])+block('away',current.away,s.away||[],s.awaySubs||[]);
+}
+function playerBtn(side,p,team,sub=false){const id=esc(side+'|'+p.num+'|'+p.name);return `<button class="player" data-player="${id}" data-name="${esc(p.name)}" data-team="${esc(team)}"><span class="num">${esc(p.num)}</span><span class="pname">${esc(p.name)}</span></button>`}
+
+async function getLineups(){
+ if(!current?.href){toast('This fixture has no Sky Sports match link yet.');return}
+ document.getElementById('getLineupsBtn').textContent='Loading…';document.getElementById('getLineupsBtn').disabled=true;
+ try{
+   const raw=(await fetchSkyPage(current.href)).text;
+   const parsed=parseLineupText(raw,current);
+   if(!parsed.home.length&&!parsed.away.length)throw Error('No lineup names found');
+   db.sheets[current.id]={...getSheet(current),...parsed};saveDB();renderLineups();document.getElementById('loggerBanner').textContent='Team sheets loaded — Sky Sports line-ups imported.';toast('Sky Sports line-ups loaded');
+ }catch(e){document.getElementById('loggerBanner').textContent='Sky Sports line-ups could not be read. Use Team Sheets for a manual fallback.';toast('Line-ups unavailable — use Team Sheets')}
+ finally{document.getElementById('getLineupsBtn').textContent='⟳ Get Line-ups';document.getElementById('getLineupsBtn').disabled=false}
+}
+function parseLineupText(raw,f){
+ // Sky is loaded in a hidden Chromium window, so line-up pages arrive as rendered HTML.
+ let text=raw;
+ try{const j=JSON.parse(raw);text=j.text||j.content||j.data?.content||raw}catch(e){}
+ if(/<html[\s>]/i.test(String(text))){
+   try{const doc=new DOMParser().parseFromString(String(text),'text/html');text=doc.body?.innerText||doc.body?.textContent||text}catch(e){}
+ }
+ text=String(text).replace(/\\n/g,'\n');
+ const lines=text.split(/\n+/).map(x=>x.replace(/[*•]/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);
+ const home=[],away=[];let side=null, mode='start';
+ const teamMatch=(line,name)=>line.toLowerCase()===name.toLowerCase()||line.toLowerCase().includes(name.toLowerCase());
+ function add(line,target){let m=line.match(/^(?:\(?(\d{1,2})\)?\s+)?(.+)$/);if(!m)return;let name=m[2].trim();if(!name||name.length>35)return;if(/^(manager|formation|substitutes|line-ups|lineups|match officials|match stats|home|away)$/i.test(name)||/^manager\s*:/i.test(name)||/^formation\s*:/i.test(name))return;target.push({num:m[1]||'',name})}
+ for(let i=0;i<lines.length;i++){
+   const l=lines[i];
+   if(teamMatch(l,f.home)){side='home';mode='start';continue}
+   if(teamMatch(l,f.away)){side='away';mode='start';continue}
+   if(/^substitutes$/i.test(l)){mode='subs';continue}
+   if(/^(manager|formation|match officials|match stats|live reporting|summary)$/i.test(l))continue;
+   if(side==='home'&&home.length<11)add(l,home); else if(side==='away'&&away.length<11)add(l,away);
+   else if(side==='home'&&mode==='subs')add(l,home); else if(side==='away'&&mode==='subs')add(l,away);
+ }
+ // de-duplicate and keep first 11 as starters, remainder as subs
+ const ded=a=>{const seen=new Set();return a.filter(x=>{const k=x.num+'|'+x.name;if(seen.has(k))return false;seen.add(k);return true})}
+ const H=ded(home),A=ded(away);
+ return {home:H.slice(0,11),away:A.slice(0,11),homeSubs:H.slice(11),awaySubs:A.slice(11)}
+}
+
+function camerasForLog(){const x=selectedLog();return x?(x.cameras||[]):[]}
+function cameraPresets(){if(!current)return [];db.cameraPresets=db.cameraPresets||{};db.cameraPresets[current.id]=db.cameraPresets[current.id]||[];return db.cameraPresets[current.id]}
+function renderCameras(){const box=document.getElementById('cameraButtons');if(!box)return;const cams=camerasForLog();const custom=cameraPresets();const all=[...Array.from({length:20},(_,i)=>String(i+1)),...custom];box.innerHTML=all.map(n=>`<button class="cam ${cams.includes(n)?'active':''}" data-cam="${esc(n)}">${esc(n)}</button>`).join('')}
+function toggleCamera(c){const x=selectedLog();if(!x)return;const a=[...(x.cameras||[])];const i=a.indexOf(c);if(i>=0)a.splice(i,1);else a.push(c);updateActive({cameras:a})}
+function addCustomCamera(){const v=document.getElementById('customCamera').value.trim();if(!v||!current||!selectedLog())return;const p=cameraPresets();if(!p.includes(v)){p.push(v);saveDB()}toggleCamera(v);document.getElementById('customCamera').value=''}
+function saveLogMeta(){if(!selectedLog())return;updateActive({evs:document.getElementById('evsInput').value.trim()});toast('Log metadata saved')}
+function keywordsRender(){document.getElementById('keywords').innerHTML=KEYWORDS.map(k=>`<button class="keyword ${k==='RED CARD'?'red':k==='YELLOW CARD'?'yellow':''}" data-key="${esc(k)}">${esc(k)}</button>`).join('')}
+keywordsRender();
+function logs(){return current?(db.logs[current.id]||[]):[]}
+function selectedLog(){return logs().find(x=>x.id===activeEventId)||logs().slice(-1)[0]}
+function createPlayerEvent(name,team,num){
+ if(!current)return;const e={id:'e'+Date.now()+Math.random().toString(36).slice(2,7),clip:'',time:nowTc(),player:num?`${num}. ${name}`:name,team,event:'',rating:'',note:'',cameras:[],evs:''};
+ db.logs[current.id]=[...logs(),e];activeEventId=e.id;saveDB();renderEvents();document.querySelectorAll('.player').forEach(b=>b.classList.toggle('selected',b.dataset.name===name));toast(`${name} · ${e.time}`);
+}
+function updateActive(patch){const arr=logs();const idx=arr.findIndex(x=>x.id===activeEventId);if(idx<0)return;arr[idx]={...arr[idx],...patch};db.logs[current.id]=arr;saveDB();renderEvents()}
+function renderEvents(){
+ const q=document.getElementById('eventSearch').value.toLowerCase();let arr=logs().filter(x=>JSON.stringify(x).toLowerCase().includes(q));
+ const body=document.getElementById('eventBody');body.innerHTML=arr.map(x=>`<tr class="${x.id===activeEventId?'active':''}" data-row="${x.id}">
+ <td><input value="${esc(x.clip)}" data-field="clip"></td><td>${esc(x.time)}</td><td>${esc(x.player)}</td><td>${esc(x.team)}</td><td><b>${esc(x.event||'—')}</b></td><td>${(x.cameras||[]).map(c=>`<span style="display:inline-block;border:1px solid #2d5b83;border-radius:4px;padding:2px 4px;margin:1px;font-size:7px">${esc(c)}</span>`).join('')||'—'}</td><td><input value="${esc(x.evs||'')}" placeholder="EVS" data-field="evs"></td><td>${x.rating?'★'.repeat(+x.rating):'—'}</td><td><input value="${esc(x.note)}" placeholder="Type a note..." data-field="note"></td><td><button class="xbtn" data-delete="${x.id}">×</button></td></tr>`).join('');
+ if(!arr.length)body.innerHTML='<tr><td colspan="10" style="text-align:center;color:#6f7e8b;padding:30px">No events logged yet. Click a player to start.</td></tr>';
+ document.getElementById('eventCount').textContent=logs().length;renderCameras();const sl=selectedLog();document.getElementById('evsInput').value=sl?.evs||'';document.getElementById('homeCount').textContent=`${current?.home||'Home'} ${logs().filter(x=>x.team===current?.home).length}`;document.getElementById('awayCount').textContent=`${current?.away||'Away'} ${logs().filter(x=>x.team===current?.away).length}`;
+}
+function rate(n){if(!selectedLog())return;updateActive({rating:String(n)})}
+function deleteEvent(id){db.logs[current.id]=logs().filter(x=>x.id!==id);if(activeEventId===id)activeEventId=null;saveDB();renderEvents()}
+function clearLog(){if(!current||!confirm('Clear every log for this match?'))return;db.logs[current.id]=[];activeEventId=null;saveDB();renderEvents();toast('Log cleared')}
+
+function exportCSV(){if(!current)return;const rows=[['Clip number','Time code','Player','Team','Event','Cameras','EVS','Rating','Notes'],...logs().map(x=>[x.clip,x.time,x.player,x.team,x.event,(x.cameras||[]).join(' '),x.evs||'',x.rating,x.note])];const csv=rows.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`${current.home} v ${current.away} - log.csv`;a.click()}
+
+function renderReports(){
+ const all=Object.entries(db.logs).flatMap(([id,arr])=>arr.map(x=>({...x,matchId:id})));let arr=all;
+ const search=document.getElementById('reportGlobalSearch').value.toLowerCase();if(search)arr=arr.filter(x=>JSON.stringify(x).toLowerCase().includes(search));
+ const p=document.getElementById('rPlayer').value,t=document.getElementById('rTeam').value,e=document.getElementById('rEvent').value,r=document.getElementById('rRating').value;
+ if(p!=='Any player')arr=arr.filter(x=>x.player===p);if(t!=='Any team')arr=arr.filter(x=>x.team===t);if(e!=='Any event')arr=arr.filter(x=>x.event===e);if(r!=='Any')arr=arr.filter(x=>x.rating===r);
+ const matches=Object.keys(db.logs).length,players=new Set(arr.map(x=>x.player)).size,three=arr.filter(x=>x.rating==='3').length;
+ const counts={};arr.forEach(x=>counts[x.event||'—']=(counts[x.event||'—']||0)+1);const common=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';
+ document.getElementById('reportSummary').innerHTML=`<div class="stat"><div class="n">${arr.length}</div><div class="l">Events</div></div><div class="stat"><div class="n">${players}</div><div class="l">Players</div></div><div class="stat"><div class="n" style="color:#f3c844">${three}</div><div class="l">Three star</div></div><div class="stat"><div class="n">—</div><div class="l">Avg rating</div></div><div class="stat"><div class="n" style="font-size:15px;color:#fff">${esc(common)}</div><div class="l">Most common</div></div>`;
+ const body=document.getElementById('reportBody');body.innerHTML=arr.map(x=>`<tr><td>${esc(x.clip||'—')}</td><td>${esc(x.time)}</td><td>${esc(x.player)}</td><td>${esc(x.team)}</td><td>${esc(x.event||'—')}</td><td>${x.rating?'★'.repeat(+x.rating):'—'}</td><td>${esc(x.note||'—')}</td></tr>`).join('')||'<tr><td colspan="7" style="padding:25px;color:#71808d">No matching logs.</td></tr>';
+ const playersList=[...new Set(all.map(x=>x.player))].sort(),teams=[...new Set(all.map(x=>x.team))].sort(),events=[...new Set(all.map(x=>x.event).filter(Boolean))].sort();
+ fillSelect('rPlayer','Any player',playersList,p);fillSelect('rTeam','Any team',teams,t);fillSelect('rEvent','Any event',events,e);
+ document.getElementById('reportMatchSub').textContent=current?`${current.home} v ${current.away} · ${current.comp} · ${current.date}`:`${matches} saved matches`;
+}
+function fillSelect(id,first,arr,keep){const s=document.getElementById(id),old=keep||s.value;s.innerHTML=`<option>${first}</option>`+arr.map(x=>`<option>${esc(x)}</option>`).join('');if(arr.includes(old))s.value=old}
+
+function openTeamModal(){if(!current)return;const s=getSheet(current);document.getElementById('homeSheet').value=sheetText(s.home);document.getElementById('awaySheet').value=sheetText(s.away);document.getElementById('homeSubs').value=sheetText(s.homeSubs);document.getElementById('awaySubs').value=sheetText(s.awaySubs);document.getElementById('teamModal').classList.add('open')}
+function saveSheets(){if(!current)return;db.sheets[current.id]={home:parseSheet(document.getElementById('homeSheet').value),away:parseSheet(document.getElementById('awaySheet').value),homeSubs:parseSheet(document.getElementById('homeSubs').value),awaySubs:parseSheet(document.getElementById('awaySubs').value)};saveDB();renderLineups();document.getElementById('loggerBanner').textContent='Team sheets loaded — manual sheets saved for this match.';document.getElementById('teamModal').classList.remove('open');toast('Team sheets saved')}
+
+function manualMatch(){document.getElementById('mDate').value=today();document.getElementById('manualModal').classList.add('open')}
+function createManual(){const f={id:'manual_'+Date.now(),comp:document.getElementById('mComp').value.trim()||'Premier League',date:document.getElementById('mDate').value||today(),home:document.getElementById('mHome').value.trim(),away:document.getElementById('mAway').value.trim(),time:document.getElementById('mKick').value.trim()||'TBC',href:document.getElementById('mHref').value.trim()};if(!f.home||!f.away){toast('Enter both teams');return}db.manual.push(f);saveDB();document.getElementById('manualModal').classList.remove('open');fixtures.push(f);openFixture(f)}
+
+function renderInterviewHome(){document.getElementById('intMatch').textContent=current?`${current.home} v ${current.away}`:'Select a match in Logger first';renderInterviewList();renderIntLog()}
+function addInterview(){document.getElementById('intComp').innerHTML=COMPETITIONS.map(c=>`<option>${esc(c)}</option>`).join('');document.getElementById('intMatchSelect').innerHTML=fixtures.map(f=>`<option value="${esc(f.id)}">${esc(f.time)} ${esc(f.home)} v ${esc(f.away)}</option>`).join('');document.getElementById('interviewModal').classList.add('open')}
+function interviewKey(){return current?current.id:'none'}
+function intArr(){const k=interviewKey();db.interviews[k]=db.interviews[k]||[];return db.interviews[k]}
+function renderInterviewList(){const arr=intArr();document.getElementById('intList').innerHTML=arr.map((x,i)=>`<div class="interview-item ${i===0?'active':''}"><b>${esc(x.speaker)}</b><div style="color:#71808e;margin-top:3px">${x.entries?.length||0} entries · ${fmtDur(x.duration||0)}</div></div>`).join('')||'<div style="padding:15px;color:#71808e;font-size:9px">No interviews yet.</div>'}
+function createInterview(){const f=fixtures.find(x=>x.id===document.getElementById('intMatchSelect').value)||current;if(f)current=f;const speaker=document.getElementById('intSpeakerInput').value.trim()||'Unknown';const k=interviewKey();db.interviews[k]=[{speaker,entries:[],duration:0,topics:[],running:false},...intArr()];saveDB();document.getElementById('interviewModal').classList.remove('open');renderInterviewList();renderIntLog();startInterview()}
+function startInterview(){const arr=intArr();if(!arr.length){toast('Add an interview first');return}interviewState={running:true,started:Date.now(),lastMark:Date.now(),index:0};arr[0].running=true;document.getElementById('intSpeaker').textContent=arr[0].speaker;saveDB();renderIntLog()}
+function markInterview(){if(!interviewState)return;const arr=intArr(),iv=arr[0],now=Date.now();iv.entries.push({tod:nowTc(),dur:Math.floor((now-interviewState.lastMark)/1000),speaker:iv.speaker,topic:'',rating:'',quote:''});interviewState.lastMark=now;saveDB();renderIntLog()}
+function endInterview(){if(!interviewState)return;const arr=intArr();if(arr[0]){arr[0].duration=Math.floor((Date.now()-interviewState.started)/1000);arr[0].running=false}interviewState=null;saveDB();renderIntLog()}
+function renderIntLog(){const arr=intArr(),iv=arr[0];if(iv){document.getElementById('intSpeaker').textContent=iv.speaker;document.getElementById('intCount').textContent=iv.entries.length;document.getElementById('intFooterDur').textContent=fmtDur(iv.duration||0)}document.getElementById('intBody').innerHTML=(iv?.entries||[]).map((x,i)=>`<tr><td><input placeholder="—"></td><td>${esc(x.tod)}</td><td>${fmtDur(x.dur||0)}</td><td>${esc(x.speaker)}</td><td>${esc(x.topic||'—')}</td><td>${x.rating?'★'.repeat(+x.rating):'—'}</td><td><input value="${esc(x.quote||'')}" placeholder="Type what was said..." data-intquote="${i}"></td><td><button class="xbtn" data-intdel="${i}">×</button></td></tr>`).join('')||'<tr><td colspan="8" style="padding:30px;text-align:center;color:#71808d">No interview entries yet.</td></tr>'}
+document.getElementById('topics').innerHTML=TOPICS.map(x=>`<button class="topic" data-topic="${esc(x)}">▢ ${esc(x)}</button>`).join('');
+
+document.addEventListener('click',e=>{
+ const nav=e.target.closest('.nav button');if(nav){showView(nav.dataset.view);return}
+ const f=e.target.closest('[data-fixture]');if(f){const x=fixtures.find(z=>z.id===f.dataset.fixture);if(x)openFixture(x);return}
+ const p=e.target.closest('[data-player]');if(p){createPlayerEvent(p.dataset.name,p.dataset.team,(p.dataset.player.split('|')[1]||''));return}
+ const cam=e.target.closest('[data-cam]');if(cam){toggleCamera(cam.dataset.cam);return}
+ const k=e.target.closest('[data-key]');if(k){if(!selectedLog())return;updateActive({event:k.dataset.key});document.querySelectorAll('.keyword').forEach(b=>b.classList.toggle('active',b===k));return}
+ const r=e.target.closest('[data-rate]');if(r){rate(+r.dataset.rate);return}
+ const d=e.target.closest('[data-delete]');if(d){deleteEvent(d.dataset.delete);return}
+ const t=e.target.closest('[data-topic]');if(t){t.classList.toggle('active');const iv=intArr()[0];if(iv){iv.topics=iv.topics||[];if(iv.topics.includes(t.dataset.topic))iv.topics=iv.topics.filter(x=>x!==t.dataset.topic);else iv.topics.push(t.dataset.topic);saveDB()}return}
+ const id=e.target.closest('[data-intdel]');if(id){const iv=intArr()[0];iv.entries.splice(+id.dataset.intdel,1);saveDB();renderIntLog();return}
+ const tab=e.target.closest('[data-matchtab]');if(tab){currentTab=tab.dataset.matchtab;document.querySelectorAll('[data-matchtab]').forEach(b=>b.classList.toggle('active',b===tab));document.getElementById('fixturesTab').style.display=currentTab==='fixtures'?'block':'none';document.getElementById('savedTab').style.display=currentTab==='saved'?'block':'none';if(currentTab==='saved')renderSaved();return}
+ if(e.target.closest('.close'))e.target.closest('.modal').classList.remove('open');
+});
+document.addEventListener('input',e=>{
+ if(e.target.id==='teamSearch'||e.target.id==='compFilter')renderFixtures();
+ if(e.target.id==='playerSearch')renderLineups();
+ if(e.target.id==='eventSearch')renderEvents();
+ if(e.target.dataset.field){const id=e.target.closest('tr')?.dataset.row;if(id)updateActive({[e.target.dataset.field]:e.target.value})}
+ if(e.target.id==='reportGlobalSearch'||['rPlayer','rTeam','rEvent','rRating'].includes(e.target.id))renderReports();
+ if(e.target.dataset.intquote){const iv=intArr()[0];if(iv?.entries[+e.target.dataset.intquote]){iv.entries[+e.target.dataset.intquote].quote=e.target.value;saveDB()}}
+});
+document.addEventListener('keydown',e=>{if(['1','2','3'].includes(e.key)&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA')rate(+e.key);if(e.code==='Space'&&document.getElementById('interviewsView').classList.contains('active')){e.preventDefault();markInterview()}});
+
+function renderSaved(){const arr=Object.entries(db.logs).map(([id,a])=>{const f=fixtures.find(x=>x.id===id)||db.manual.find(x=>x.id===id);return {f,a}}).filter(x=>x.a.length);document.getElementById('savedTab').innerHTML=arr.map(x=>`<button class="fixture" data-fixture="${esc(x.f?.id||'')}"><div><b>${x.a.length}</b><div class="fdate">logs</div></div><div>${esc(x.f?.comp||'')}</div><div class="teams">${esc(x.f?.home||'Unknown')} <span>v</span> ${esc(x.f?.away||'Unknown')}</div></button>`).join('')||'<div class="card" style="padding:15px;color:#71808d">No saved logs yet.</div>'}
+
+document.getElementById('dateInput').value=today();
+document.getElementById('dateInput').addEventListener('change',refreshFixtures);
+document.getElementById('todayBtn').onclick=()=>{document.getElementById('dateInput').value=today();refreshFixtures()};
+document.getElementById('refreshBtn').onclick=()=>refreshFixtures();
+document.getElementById('manualBtn').onclick=manualMatch;document.getElementById('newMatchBtn').onclick=manualMatch;
+document.getElementById('getLineupsBtn').onclick=getLineups;document.getElementById('teamSheetsBtn').onclick=openTeamModal;document.getElementById('editTeamsBtn').onclick=openTeamModal;document.getElementById('saveSheets').onclick=saveSheets;
+document.getElementById('clearLogBtn').onclick=clearLog;document.getElementById('exportBtn').onclick=exportCSV;document.getElementById('addCamera').onclick=addCustomCamera;document.getElementById('saveLogMeta').onclick=saveLogMeta;
+document.getElementById('createManual').onclick=createManual;
+document.getElementById('testSky').onclick=async()=>{document.getElementById('testResult').textContent='Testing supported Sky Sports feeds…';try{const x=await loadSkyFixtures(today());document.getElementById('testResult').textContent=`Supported Sky feeds OK — ${x.rows.length} fixtures found.`}catch(e){document.getElementById('testResult').textContent='Sky Sports feeds could not be reached from this browser/network; cached fixtures remain available.'}};
+document.getElementById('wipeData').onclick=()=>{if(confirm('Delete all saved logger data from this browser?')){localStorage.removeItem(STORE);location.reload()}};
+document.getElementById('addInterview').onclick=addInterview;document.getElementById('createInterview').onclick=createInterview;document.getElementById('startInterview').onclick=startInterview;document.getElementById('markInterview').onclick=markInterview;document.getElementById('endInterview').onclick=endInterview;document.getElementById('intBack').onclick=()=>showView('matches');document.getElementById('clearInt').onclick=()=>{if(confirm('Clear interview log?')){db.interviews[interviewKey()]=[];saveDB();renderIntLog()}};
+document.getElementById('darkSwitch').onclick=e=>e.currentTarget.classList.toggle('on');
+document.querySelectorAll('.close').forEach(x=>x.addEventListener('click',()=>x.closest('.modal').classList.remove('open')));
+refreshFixtures();renderReports();renderInterviewHome();
+</script>
+</body>
+</html>

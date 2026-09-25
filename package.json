@@ -1,0 +1,42 @@
+{
+  "name": "ll-match-logger",
+  "version": "1.2.1",
+  "description": "LL Match Logger - Sky Sports desktop app",
+  "main": "main.js",
+  "author": "LL Match Logger",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "44.4.5",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.llmatchlogger.app",
+    "productName": "LL Match Logger",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "LL-Match-Logger-${version}-portable.exe"
+    }
+  }
+}
