@@ -81,7 +81,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
  <div class="sidebar-bottom">
   <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
-  <div class="app-version">v1.2.4</div>
+  <div class="app-version">v1.2.6</div>
  </div>
 </aside>
 <main class="main">
@@ -248,8 +248,10 @@ function fixtureFromRaw(raw,comp,date,href=''){
  raw=cleanText(raw); if(!raw)return null;
  raw=raw.replace(/app\.football\.scores_fixtures\.[a-z_]+/gi,' ').replace(/\s+/g,' ').trim();
  // Scheduled fixture: Team A vs Team B Kick-off at 3:00pm
- let m=raw.match(/^(.+?)\s+vs\s+(.+?)(?:\s+Kick-off at\s+([0-9:.]+(?:am|pm)))?\s*\.?$/i);
- if(m)return makeFixture(m[1],m[2],m[3]||'',comp,date,href,raw);
+ let m=raw.match(/^(.+?)\s+vs\s+(.+?)\s+Kick-off at\s+([0-9:.]+(?:am|pm))\s*\.?$/i);
+ if(m)return makeFixture(m[1],m[2],m[3],comp,date,href,raw);
+ m=raw.match(/^(.+?)\s+vs\s+(.+?)\s*\.?$/i);
+ if(m)return makeFixture(m[1],m[2],'',comp,date,href,raw);
  // Postponed fixture: Team A P Team B P
  m=raw.match(/^(.+?)\s+P\s+(.+?)\s+P(?:\s+Postponed.*)?$/i);
  if(m)return makeFixture(m[1],m[2],'',comp,date,href,raw+' Postponed');

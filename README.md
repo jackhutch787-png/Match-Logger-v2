@@ -1,8 +1,8 @@
-# LL Match Logger — Windows Desktop App v1.2.4
+# LL Match Logger — Windows Desktop App v1.2.6
 
-This is **v1.2.4** of LL Match Logger, the standalone Windows desktop build for football live logging.
+This is **v1.2.6** of LL Match Logger, the standalone Windows desktop build for football live logging.
 
-## What changed in v1.2.4
+## What changed in v1.2.6
 
 - **Line-up retrieval now follows Sky Sports' own Teams link from the match centre.** The app no longer guesses the Teams URL from Sky's fixture URL.
 - **Old/invalid cached team sheets are discarded** when a fixture is opened, so a previous bad parse cannot remain on screen.
@@ -10,7 +10,7 @@ This is **v1.2.4** of LL Match Logger, the standalone Windows desktop build for 
 - Sky's player format of shirt number → player name is handled, including event-minute lines between players.
 - Captain markers are removed from player names.
 - An automatic import is accepted only when both sides contain exactly 11 starters.
-- Fixture parsing from the working v1.2.1 build is retained.
+- Fixture parsing from the working fixture parser is retained.
 
 ## Supported competitions
 
@@ -33,4 +33,4 @@ This is **v1.2.4** of LL Match Logger, the standalone Windows desktop build for 
 5. Download the `LL-Match-Logger-Windows` artifact.
 6. Extract it and run `LL-Match-Logger-1.2.4-portable.exe`.
 
-The app itself displays **v1.2.4** in the interface so the version being tested is unambiguous.
+The app itself displays **v1.2.6** in the interface so the version being tested is unambiguous.
