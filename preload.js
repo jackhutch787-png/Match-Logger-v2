@@ -1,5 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('llBridge', {
   fetchSky: (url) => ipcRenderer.invoke('http-fetch', url),
-  resolveSkyTeams: (url) => ipcRenderer.invoke('sky-resolve-teams', url)
+    resolveTeams: (url) => ipcRenderer.invoke('resolve-teams', url)
 });

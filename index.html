@@ -11,7 +11,7 @@
  --yellow:#f4c542;--red:#ef6262;--input:#0d1721;
 }
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:13px}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px}
 button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:default}
 .app{height:100vh;display:flex}
 .sidebar{width:158px;flex:0 0 158px;background:#0d1721;border-right:1px solid #182532;display:flex;flex-direction:column}
@@ -65,25 +65,6 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
 .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.setting{padding:13px}.setting h3{font-size:11px;margin:0 0 5px}.setting p{font-size:9px;color:#7f8e9b;line-height:1.5}.setting-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
 .toast{position:fixed;bottom:18px;right:18px;background:#152431;border:1px solid #33516a;color:#eaf2f8;border-radius:7px;padding:8px 11px;font-size:9px;opacity:0;transform:translateY(6px);pointer-events:none;transition:.15s;z-index:200}.toast.show{opacity:1;transform:none}
 @media(max-width:1000px){.sidebar{width:130px;flex-basis:130px}.match-grid{grid-template-columns:225px minmax(420px,1fr)}.keywords{grid-template-columns:repeat(3,1fr)}}
-
-/* v1.2.5 readability pass: slightly larger UI text without changing the layout. */
-body{font-size:14px}
-.nav button{font-size:11px}
-.top-status{font-size:10px}
-.btn{font-size:11px}
-.btn.small{font-size:10px}
-input,select,textarea{font-size:11px}
-.page-head h1{font-size:20px}
-.page-head .sub{font-size:10px}
-.tabs button{font-size:11px}
-.fixture .ftime{font-size:11px}.fixture .fdate{font-size:9px}.fixture .comp{font-size:9px}.fixture .teams{font-size:11px}
-.label{font-size:9px}.match-value{font-size:12px}.tc{font-size:15px}
-.banner{font-size:10px}
-.teamtab{font-size:11px}.player{font-size:10px;padding:6px 7px}.subs-label{font-size:9px}.search-player input{font-size:10px}
-.keyword{font-size:9px}.cam{font-size:9px}.ratebtn{font-size:11px}.ratebtn span{font-size:8px}.rating h4{font-size:9px}
-.event-title{font-size:10px}.event-title input{font-size:9px}.event-table{font-size:9px}.event-table th{font-size:8px}.event-table input{font-size:9px}
-.log-footer{font-size:9px}.toast{font-size:10px}
-.setting h3{font-size:12px}.setting p{font-size:10px}.setting-row{font-size:10px}
 </style>
 </head>
 <body>
@@ -100,7 +81,7 @@ input,select,textarea{font-size:11px}
  <div class="sidebar-bottom">
   <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
-  <div class="app-version">v1.2.5</div>
+  <div class="app-version">v1.2.4</div>
  </div>
 </aside>
 <main class="main">
@@ -253,6 +234,7 @@ function normalizeCompetition(text){
  if(t.includes('europa league') && !t.includes('conference') && !t.includes('women'))return 'UEFA Europa League';
  return null;
 }
+function normaliseKickoff(t){const x=cleanText(t||'');if(!x)return '';return x.replace(/^(\d{1,2})\.(\d{2})(am|pm)$/i,'$1:$2$3')}
 function makeFixture(home,away,time,comp,date,href='',raw=''){
  home=cleanText(home).replace(/^.*?(?:app\.football\.scores_fixtures\.[a-z_]+\s+)+/i,'').trim();
  away=cleanText(away).replace(/\s+(?:Kick-off at.*)$/i,'').trim();
@@ -260,7 +242,7 @@ function makeFixture(home,away,time,comp,date,href='',raw=''){
  const key=`${comp}|${home}|${away}|${time||''}`.toLowerCase();
  const normalizedHref=localHref(href||'');
  const matchId=extractSkyMatchId(normalizedHref);
- return {home,away,time:cleanText(time||''),comp,date,href:normalizedHref,matchId,status:/postponed/i.test(raw)?'Postponed':'',id:'sky_'+btoa(unescape(encodeURIComponent(key))).replace(/[^a-z0-9]/gi,'').slice(0,28)};
+ return {home,away,time:normaliseKickoff(time),comp,date,href:normalizedHref,matchId,status:/postponed/i.test(raw)?'Postponed':'',id:'sky_'+btoa(unescape(encodeURIComponent(key))).replace(/[^a-z0-9]/gi,'').slice(0,28)};
 }
 function fixtureFromRaw(raw,comp,date,href=''){
  raw=cleanText(raw); if(!raw)return null;
@@ -299,39 +281,56 @@ function parseSkyDailyPage(raw,date){
  const out=[],seen=new Set();
  const doc=new DOMParser().parseFromString(String(raw),'text/html');
  const add=(f)=>{if(!f)return;const key=`${f.comp}|${f.home}|${f.away}|${f.time}`.toLowerCase();if(seen.has(key))return;seen.add(key);out.push(f)};
- // The Sky page URL is date-specific. Do not depend on Sky's calendar/date heading markup,
- // which changes between rendered versions. Instead, identify supported competition sections
- // and parse both scheduled and completed/live fixture formats within those sections.
+ const bodyLines=String(doc.body?.innerText||'').split(/\n+/).map(cleanText).filter(Boolean);
+ const supported=new Set(COMPETITIONS);
+ const headingName=(line)=>normalizeCompetition(line);
+ const isKnownUnsupportedHeading=(line)=>{
+   const t=cleanText(line).toLowerCase();
+   return /^(?:uefa nations league|national league(?: north| south)?|scottish .*|irish .*|northern irish .*|league of ireland .*|welsh .*|women's super league 2|international .*|friendly .*|premier sports cup|the fa trophy|fa trophy|scottish challenge cup|spanish .*|italian .*|german .*|french .*|dutch .*|belgian .*|portuguese .*|danish .*|norwegian .*|swedish .*|finnish .*|icelandic .*|austrian .*|swiss .*|greek .*|turkish .*|croatian .*|serbian .*|polish .*|czech .*|romanian .*|hungarian .*|slovak .*|slovenian .*|bulgarian .*|ukrainian .*|cypriot .*|israeli .*|estonian .*|latvian .*|lithuanian .*|albanian .*|bosnian .*|montenegrin .*|north macedonian .*|maltese .*|luxembourg .*|fa cup|champions league|conference league qualifying|europa conference qualifying)$/i.test(t);
+ };
+ const fixtureLines=[];
  let currentComp=null;
- const elements=[...doc.body.querySelectorAll('h1,h2,h3,h4,h5,h6,a[href]')];
- for(const el of elements){
-   const txt=cleanText(el.textContent||'');if(!txt)continue;
-   const c=normalizeCompetition(txt);
-   if(c){currentComp=c;continue}
-   if(el.tagName==='H1'||el.tagName==='H2'||el.tagName==='H3'||el.tagName==='H4'||el.tagName==='H5'||el.tagName==='H6'){
-     // Any other section heading ends the current supported competition block.
-     if(!c)currentComp=null;
-     continue;
-   }
-   if(currentComp&&el.tagName==='A')add(fixtureFromAnchor(el,currentComp,date));
+ for(const line of bodyLines){
+   const c=headingName(line);
+   if(c){currentComp=c;continue;}
+   if(isKnownUnsupportedHeading(line)){currentComp=null;continue;}
+   if(!currentComp)continue;
+   const f=fixtureFromRaw(line,currentComp,date);
+   if(f)fixtureLines.push(f);
  }
- // Body-text fallback. This handles Sky's accessible/rendered text even if fixture anchors
- // are not nested under a predictable heading element.
- let bodyComp=null;
- for(const line of String(doc.body?.innerText||'').split(/\n+/).map(cleanText).filter(Boolean)){
-   const c=normalizeCompetition(line);
-   if(c){bodyComp=c;continue}
-   if(/^(?:View full .* table|Football Calendar|Go to today|Today|Yesterday|Tomorrow)$/i.test(line))continue;
-   // Recognise known non-supported competition headings so we don't leak their fixtures.
-   if(/^(?:UEFA Nations League|National League|Scottish Championship|Scottish League 1|Scottish League 2|National League North|National League South|International Match|Women's Super League 2|Friendly Match(?:es)?|Premier Sports Cup|The FA Trophy|Scottish Challenge Cup|Northern Irish Premiership|European Under-21 Championship Qualifying|League of Ireland Premier Division|Welsh Premier League|Spanish La Liga|Dutch Eredivisie|Belgian Pro League Football|Portuguese Primeira Liga|Finnish Veikkausliiga|Coppa Italia|Isthmian League|Northern Premier League|Southern Premier League.*|FA Trophy)$/i.test(line)){
-     bodyComp=null;continue;
-   }
-   if(bodyComp){
-     const f=fixtureFromRaw(line,bodyComp,date);add(f);
+ // Recover the actual Sky match-centre URL from the rendered fixture anchors by matching teams.
+ // This avoids guessing IDs and also preserves the link needed later to resolve the Teams tab.
+ const anchors=[...doc.querySelectorAll('a[href]')].map(a=>({
+   href:localHref(a.getAttribute('href')||a.href||''),
+   text:cleanText(a.textContent||''),
+   parent:cleanText(a.closest('li,article,div')?.innerText||'')
+ })).filter(x=>x.href && /skysports\.com\/football\//i.test(x.href));
+ const findHref=(f)=>{
+   const same=(a,b)=>cleanText(a).toLowerCase().replace(/[^a-z0-9]+/g,'')===cleanText(b).toLowerCase().replace(/[^a-z0-9]+/g,'');
+   const hit=anchors.find(a=>{
+     const blob=(a.text+' '+a.parent).toLowerCase();
+     return blob.includes(f.home.toLowerCase())&&blob.includes(f.away.toLowerCase())&&/\/football\/[^/]+\/\d+|\/football\/[^/]+$/i.test(a.href);
+   });
+   if(hit)return hit.href;
+   const fuzzy=anchors.find(a=>same(a.text,f.home)||same(a.text,f.away));
+   return fuzzy?.href||'';
+ };
+ fixtureLines.forEach(f=>{f.href=findHref(f);f.matchId=extractSkyMatchId(f.href);add(f)});
+ // Anchor fallback only for supported sections where the accessible body text did not expose a fixture line.
+ let currentAnchorComp=null;
+ for(const a of [...doc.querySelectorAll('h1,h2,h3,h4,h5,h6,a[href]')]){
+   const txt=cleanText(a.textContent||'');if(!txt)continue;
+   const c=headingName(txt);
+   if(c){currentAnchorComp=c;continue;}
+   if(a.tagName?.match(/^H[1-6]$/i)){currentAnchorComp=null;continue;}
+   if(currentAnchorComp&&a.tagName==='A'){
+     const f=fixtureFromAnchor(a,currentAnchorComp,date);
+     if(f && f.time) add(f);
    }
  }
- return out;
+ return out.filter(f=>supported.has(f.comp));
 }
+
 async function loadSkyFixtures(date){
  const cache=db.fixtureCache?.[date]||{};
  const url=SKY_DAILY+date;
@@ -382,10 +381,7 @@ function openFixture(f){
  const existingTeamsMatch=existing.sourceHome&&existing.sourceAway&&
    cleanText(existing.sourceHome).toLowerCase()===cleanText(f.home).toLowerCase()&&
    cleanText(existing.sourceAway).toLowerCase()===cleanText(f.away).toLowerCase();
- // Never trust an automatically imported Sky sheet from an older build.
- // Manual Team Sheets are preserved; automatic sheets are refreshed by Get Line-ups.
- const isAutoSheet=!!existing.sourceUrl || existing.source==='sky';
- if(isAutoSheet || !existingTeamsMatch || !Array.isArray(existing.home)||existing.home.length!==11||!Array.isArray(existing.away)||existing.away.length!==11){
+ if(!existingTeamsMatch||!Array.isArray(existing.home)||existing.home.length!==11||!Array.isArray(existing.away)||existing.away.length!==11){
    delete db.sheets[f.id];
  }
  saveDB();showView('logger');
@@ -425,55 +421,16 @@ function extractSkyMatchId(href){
    return m?m[1]:'';
  }
 }
-function skyTeamsUrl(href){
- const u=localHref(href); if(!u)return '';
- try{
-   const x=new URL(u);
-   if(/\/teams\/\d+\/?$/i.test(x.pathname))return x.href;
-   const id=extractSkyMatchId(x.href);
-   if(id){
-     const slugMatch=x.pathname.match(/^\/football\/([^/]+)/i);
-     if(slugMatch){x.pathname=`/football/${slugMatch[1]}/teams/${id}`;x.search='';x.hash='';return x.href}
-   }
-   // Some Sky fixture links omit the numeric match id. Preserve the fixture slug
-   // and try the teams route; Sky can redirect this to the canonical match page.
-   const slug=x.pathname.match(/^\/football\/([^/]+)(?:\/.*)?$/i);
-   if(slug){x.pathname=`/football/${slug[1]}/teams`;x.search='';x.hash='';return x.href}
-   return x.href;
- }catch(e){return u}
-}
 async function resolveSkyTeamsUrl(f){
  const href=localHref(f?.href||'');
  if(!href)return '';
- // Best path: ask the Electron/Sky renderer to inspect the actual match centre
- // and return Sky's real Teams href. Sky uses a different numeric ID on /teams/.
- if(window.llBridge?.resolveSkyTeams){
-   try{
-     const exact=await window.llBridge.resolveSkyTeams(href);
-     if(exact && /\/teams\/\d+\/?(?:$|[?#])/i.test(exact))return exact;
-   }catch(e){}
+ if(/\/teams\/\d+\/?(?:$|[?#])/i.test(href))return href;
+ if(window.llBridge?.resolveTeams){
+   try{const exact=await window.llBridge.resolveTeams(href);if(exact && /\/teams\/\d+\/?(?:$|[?#])/i.test(exact))return exact}catch(e){}
  }
- // Fallback: inspect the rendered match-centre HTML in the renderer.
- try{
-   const matchPage=(await fetchSkyPage(href)).text;
-   const doc=new DOMParser().parseFromString(String(matchPage),'text/html');
-   const teamLink=[...doc.querySelectorAll('a[href]')].find(a=>{
-     const label=cleanText(a.textContent||a.getAttribute('aria-label')||'');
-     const h=a.getAttribute('href')||'';
-     return /\/teams\/\d+\/?(?:[?#].*)?$/i.test(h) || /^teams$/i.test(label);
-   });
-   if(teamLink){
-     const full=localHref(teamLink.getAttribute('href')||teamLink.href||'');
-     if(full && /\/teams\/\d+\/?(?:$|[?#])/i.test(full))return full;
-   }
-   const htmlHref=String(matchPage).match(/href=["']([^"']*\/teams\/\d+[^"']*)["']/i)?.[1]||'';
-   if(htmlHref){
-     const full=localHref(htmlHref);
-     if(full)return full;
-   }
- }catch(e){}
- throw Error('Sky match centre did not expose its Teams link');
+ return '';
 }
+
 async function getLineups(){
  if(!current?.href){toast('This fixture has no Sky Sports match link yet.');return}
  document.getElementById('getLineupsBtn').textContent='Loading…';document.getElementById('getLineupsBtn').disabled=true;
@@ -483,7 +440,7 @@ async function getLineups(){
    const raw=(await fetchSkyPage(teamsUrl)).text;
    const parsed=parseLineupText(raw,current);
    if(parsed.home.length!==11 || parsed.away.length!==11)throw Error(`Incomplete line-up: ${parsed.home.length}/${parsed.away.length}`);
-   db.sheets[current.id]={...getSheet(current),...parsed,source:'sky',sourceHome:current.home,sourceAway:current.away,sourceUrl:teamsUrl};saveDB();renderLineups();document.getElementById('loggerBanner').textContent='Team sheets loaded — Sky Sports line-ups imported.';toast('Sky Sports line-ups loaded');
+   db.sheets[current.id]={...getSheet(current),...parsed,sourceHome:current.home,sourceAway:current.away,sourceUrl:teamsUrl};saveDB();renderLineups();document.getElementById('loggerBanner').textContent='Team sheets loaded — Sky Sports line-ups imported.';toast('Sky Sports line-ups loaded');
  }catch(e){
    const detail=String(e?.message||e||'Unknown error');
    document.getElementById('loggerBanner').textContent=`Sky Sports line-ups could not be read (${detail}). Use Team Sheets for a manual fallback.`;
