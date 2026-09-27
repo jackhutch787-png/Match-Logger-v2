@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LL Match Logger — Sky Sports</title>
+<title>LL Match Logger v2 — Sky Sports</title>
 <style>
 :root{
  --bg:#081019;--panel:#101a25;--panel2:#14202c;--panel3:#182735;--line:#223140;
@@ -11,7 +11,7 @@
  --yellow:#f4c542;--red:#ef6262;--input:#0d1721;
 }
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:13px}
 button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:default}
 .app{height:100vh;display:flex}
 .sidebar{width:158px;flex:0 0 158px;background:#0d1721;border-right:1px solid #182532;display:flex;flex-direction:column}
@@ -37,7 +37,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
 .day-label{font-size:9px;color:#8493a1;text-transform:uppercase;font-weight:800;margin:12px 2px 5px}
 .fixture-list{display:flex;flex-direction:column;gap:4px}
 .fixture{width:100%;display:grid;grid-template-columns:82px 42px 1fr;align-items:center;border:1px solid #202e3b;background:#101a25;color:var(--text);border-radius:7px;padding:8px 11px;text-align:left}
-.fixture:hover{background:#152431;border-color:#2e4557}.fixture .ftime{font-weight:850;font-size:10px}.fixture .fdate{font-size:8px;color:#687886;margin-top:2px}.fixture .comp{font-size:8px;color:#8a98a4}.fixture .teams{font-size:10px;font-weight:700}.fixture .teams span{color:#5f7180;margin:0 6px}.fixture .bar{width:3px;height:22px;background:#267be8;display:inline-block;margin-right:8px;border-radius:2px;vertical-align:middle}
+.fixture:hover{background:#152431;border-color:#2e4557}.fixture .ftime{font-weight:850;font-size:12px}.fixture .fdate{font-size:8px;color:#687886;margin-top:2px}.fixture .comp{font-size:8px;color:#8a98a4}.fixture .teams{font-size:12px;font-weight:700}.fixture .teams span{color:#5f7180;margin:0 6px}.fixture .bar{width:3px;height:22px;background:#267be8;display:inline-block;margin-right:8px;border-radius:2px;vertical-align:middle}
 .match-shell{height:100%;display:flex;flex-direction:column;min-height:0}
 .match-head{display:grid;grid-template-columns:180px 1fr auto auto auto auto;gap:14px;align-items:center;padding:11px 13px;margin-bottom:7px}
 .label{font-size:8px;color:#71818f;text-transform:uppercase;letter-spacing:.9px;font-weight:850}.match-value{font-size:11px;font-weight:800;margin-top:4px}.tc{color:#2e8bff;font-size:14px;font-weight:850;font-variant-numeric:tabular-nums}
@@ -81,7 +81,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
  <div class="sidebar-bottom">
   <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
-  <div class="app-version">v1.2.6</div>
+  <div class="app-version">v2.0.0</div>
  </div>
 </aside>
 <main class="main">
@@ -222,19 +222,20 @@ function dateHeadingToISO(text,year){
  if(!m)return null;const months={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};return `${m[3]||year}-${String(months[m[2].toLowerCase()]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`
 }
 function normalizeCompetition(text){
- const t=cleanText(text).toLowerCase().replace(/\s+/g,' ');
- if(t.includes('premier league') && !t.includes('women'))return 'Premier League';
- if(t.includes('championship') && !t.includes('scottish'))return 'Championship';
- if(t.includes('league one') && !t.includes('scottish'))return 'League One';
- if(t.includes('league two') && !t.includes('scottish'))return 'League Two';
- if(t.includes("women's super league") || t.includes('women’s super league'))return 'WSL';
- if(t.includes('efl trophy'))return 'EFL Trophy';
- if(t.includes('carabao cup') || t.includes('efl cup'))return 'Carabao Cup';
- if(t.includes('europa conference league') && !t.includes('women'))return 'UEFA Europa Conference League';
- if(t.includes('europa league') && !t.includes('conference') && !t.includes('women'))return 'UEFA Europa League';
+ const raw=cleanText(text).replace(/[’]/g,"'");
+ const t=raw.toLowerCase().replace(/\s+/g,' ').trim();
+ // Sky uses sponsor/short labels. Map only exact competition headings we explicitly support.
+ if(/^premier league$/.test(t)) return 'Premier League';
+ if(/^sky bet championship$/.test(t) || /^championship$/.test(t)) return 'Championship';
+ if(/^sky bet league one$/.test(t) || /^efl league one$/.test(t) || /^league one$/.test(t)) return 'League One';
+ if(/^sky bet league two$/.test(t) || /^efl league two$/.test(t) || /^league two$/.test(t)) return 'League Two';
+ if(/^barclays women's super league$/.test(t) || /^women's super league$/.test(t) || /^women’s super league$/.test(t)) return 'WSL';
+ if(/^efl trophy(?: .*)?$/.test(t) || /^vertu trophy(?: .*)?$/.test(t)) return 'EFL Trophy';
+ if(/^carabao cup(?: .*)?$/.test(t) || /^efl cup(?: .*)?$/.test(t)) return 'Carabao Cup';
+ if(/^uefa europa league$/.test(t) || /^europa league$/.test(t)) return 'UEFA Europa League';
+ if(/^uefa conference league$/.test(t) || /^uefa europa conference league$/.test(t) || /^conference league$/.test(t)) return 'UEFA Europa Conference League';
  return null;
 }
-function normaliseKickoff(t){const x=cleanText(t||'');if(!x)return '';return x.replace(/^(\d{1,2})\.(\d{2})(am|pm)$/i,'$1:$2$3')}
 function makeFixture(home,away,time,comp,date,href='',raw=''){
  home=cleanText(home).replace(/^.*?(?:app\.football\.scores_fixtures\.[a-z_]+\s+)+/i,'').trim();
  away=cleanText(away).replace(/\s+(?:Kick-off at.*)$/i,'').trim();
@@ -242,97 +243,97 @@ function makeFixture(home,away,time,comp,date,href='',raw=''){
  const key=`${comp}|${home}|${away}|${time||''}`.toLowerCase();
  const normalizedHref=localHref(href||'');
  const matchId=extractSkyMatchId(normalizedHref);
- return {home,away,time:normaliseKickoff(time),comp,date,href:normalizedHref,matchId,status:/postponed/i.test(raw)?'Postponed':'',id:'sky_'+btoa(unescape(encodeURIComponent(key))).replace(/[^a-z0-9]/gi,'').slice(0,28)};
+ return {home,away,time:cleanText(time||''),comp,date,href:normalizedHref,matchId,status:/postponed/i.test(raw)?'Postponed':'',id:'sky_'+btoa(unescape(encodeURIComponent(key))).replace(/[^a-z0-9]/gi,'').slice(0,28)};
 }
 function fixtureFromRaw(raw,comp,date,href=''){
  raw=cleanText(raw); if(!raw)return null;
- raw=raw.replace(/app\.football\.scores_fixtures\.[a-z_]+/gi,' ').replace(/\s+/g,' ').trim();
- // Scheduled fixture: Team A vs Team B Kick-off at 3:00pm
- let m=raw.match(/^(.+?)\s+vs\s+(.+?)\s+Kick-off at\s+([0-9:.]+(?:am|pm))\s*\.?$/i);
+ raw=raw.replace(/app\.football\.scores_fixtures\.[a-z_]+/gi,' ').replace(/^view fixture\s+/i,'').replace(/\s+/g,' ').trim();
+ // Sky's accessible fixture description is normally: "Home vs Away. Kick-off at 3:00pm".
+ // Parse the kick-off first so it cannot become part of the away-team name.
+ let m=raw.match(/^(.+?)\s+vs\s+(.+?)(?:\.\s*)?Kick-off\s+at\s+([0-9]{1,2}:[0-9]{2}\s*(?:am|pm)|[0-9]{1,2}\s*(?:am|pm))\s*$/i);
  if(m)return makeFixture(m[1],m[2],m[3],comp,date,href,raw);
- m=raw.match(/^(.+?)\s+vs\s+(.+?)\s*\.?$/i);
- if(m)return makeFixture(m[1],m[2],'',comp,date,href,raw);
- // Postponed fixture: Team A P Team B P
- m=raw.match(/^(.+?)\s+P\s+(.+?)\s+P(?:\s+Postponed.*)?$/i);
+ m=raw.match(/^(.+?)\s+vs\s+(.+?)(?:\.|\s)+([0-9]{1,2}:[0-9]{2}\s*(?:am|pm)|[0-9]{1,2}\.\d{2}\s*(?:am|pm))\s*$/i);
+ if(m)return makeFixture(m[1],m[2],m[3].replace('.',':'),comp,date,href,raw);
+ // Postponed / abandoned fixture descriptions.
+ m=raw.match(/^(.+?)\s+vs\s+(.+?)(?:\.\s*)?(?:Postponed|Abandoned)(?:\s*:\s*.*)?$/i);
  if(m)return makeFixture(m[1],m[2],'',comp,date,href,raw+' Postponed');
- // Completed/live fixture: Team A 2 Team B 1 FT/HT/AET or a live minute.
- // Use the first two standalone score numbers and strip the status suffix.
- m=raw.match(/^(.+?)\s+(\d+)\s+(.+?)\s+(\d+)\s+(?=(?:FT|HT|AET|\d+\s*\+\s*\d+\'|\d+\'|$))/i);
- if(m){
-   const status=raw.slice(m[0].length).trim();
-   return makeFixture(m[1],m[3],'',comp,date,href,raw+' '+status);
- }
+ // Completed/live: Home score Away score followed by status. We retain the fixture but don't invent a KO time.
+ m=raw.match(/^(.+?)\s+(\d+)\s+(.+?)\s+(\d+)\s+(?:FT|HT|AET|LIVE|\d+['’])/i);
+ if(m)return makeFixture(m[1],m[3],'',comp,date,href,raw);
+ // Some rendered anchors expose only "Home are scheduled to play Away . 3.00pm".
+ m=raw.match(/^(.+?)\s+are scheduled to play\s+(.+?)\s*\.\s*([0-9]{1,2})\.([0-9]{2})\s*(am|pm)\s*$/i);
+ if(m)return makeFixture(m[1],m[2],`${m[3]}:${m[4]}${m[5]}`,comp,date,href,raw);
  return null;
 }
 function fixtureFromAnchor(a,comp,date){
- const parent=a.closest('li,article,div') || a.parentElement || a;
- const parentText=cleanText(parent.innerText||parent.textContent||'');
  const href=a.getAttribute('href')||a.href||'';
- const dataId=a.getAttribute('data-fixture-id')||a.getAttribute('data-match-id')||a.getAttribute('data-id')||parent.getAttribute?.('data-fixture-id')||parent.getAttribute?.('data-match-id')||'';
- const candidates=[a.getAttribute('aria-label'),a.getAttribute('title'),a.textContent,parentText].filter(Boolean);
- for(const raw of candidates){
-   const f=fixtureFromRaw(raw,comp,date,href);
-   if(f){
-     if(!f.matchId && dataId && /^\d+$/.test(dataId))f.matchId=dataId;
-     return f;
-   }
+ let node=a, best='';
+ for(let i=0;i<5 && node;i++,node=node.parentElement){
+   const txt=cleanText(node.innerText||node.textContent||'');
+   if(txt && txt.length<350 && /\bvs\b/i.test(txt) && /kick-off|\d{1,2}\.\d{2}\s*(?:am|pm)/i.test(txt)){best=txt;break;}
  }
+ const candidates=[best,a.getAttribute('aria-label'),a.getAttribute('title'),a.textContent].filter(Boolean);
+ // Prefer the canonical "Home vs Away. Kick-off at ..." sentence when present.
+ for(const raw of candidates){
+   const canonical=String(raw).match(/([^.!?]+?)\s+vs\s+([^.!?]+?)(?:\.\s*)?Kick-off\s+at\s+([0-9]{1,2}:[0-9]{2}\s*(?:am|pm)|[0-9]{1,2}\s*(?:am|pm))/i);
+   if(canonical){const f=makeFixture(canonical[1],canonical[2],canonical[3],comp,date,href,raw);if(f)return f;}
+ }
+ for(const raw of candidates){const f=fixtureFromRaw(raw,comp,date,href);if(f)return f;}
  return null;
 }
 function parseSkyDailyPage(raw,date){
  const out=[],seen=new Set();
  const doc=new DOMParser().parseFromString(String(raw),'text/html');
- const add=(f)=>{if(!f)return;const key=`${f.comp}|${f.home}|${f.away}|${f.time}`.toLowerCase();if(seen.has(key))return;seen.add(key);out.push(f)};
- const bodyLines=String(doc.body?.innerText||'').split(/\n+/).map(cleanText).filter(Boolean);
- const supported=new Set(COMPETITIONS);
- const headingName=(line)=>normalizeCompetition(line);
- const isKnownUnsupportedHeading=(line)=>{
-   const t=cleanText(line).toLowerCase();
-   return /^(?:uefa nations league|national league(?: north| south)?|scottish .*|irish .*|northern irish .*|league of ireland .*|welsh .*|women's super league 2|international .*|friendly .*|premier sports cup|the fa trophy|fa trophy|scottish challenge cup|spanish .*|italian .*|german .*|french .*|dutch .*|belgian .*|portuguese .*|danish .*|norwegian .*|swedish .*|finnish .*|icelandic .*|austrian .*|swiss .*|greek .*|turkish .*|croatian .*|serbian .*|polish .*|czech .*|romanian .*|hungarian .*|slovak .*|slovenian .*|bulgarian .*|ukrainian .*|cypriot .*|israeli .*|estonian .*|latvian .*|lithuanian .*|albanian .*|bosnian .*|montenegrin .*|north macedonian .*|maltese .*|luxembourg .*|fa cup|champions league|conference league qualifying|europa conference qualifying)$/i.test(t);
+ const add=(f)=>{
+   if(!f || !COMPETITIONS.includes(f.comp)) return;
+   const key=`${f.comp}|${f.home}|${f.away}`.toLowerCase();
+   const old=out.find(x=>`${x.comp}|${x.home}|${x.away}`.toLowerCase()===key);
+   // Prefer a version that contains a real kick-off time and a real match URL.
+   if(old){
+     if(!old.time && f.time) Object.assign(old,{time:f.time});
+     if(!old.href && f.href) Object.assign(old,{href:f.href,matchId:f.matchId});
+     return;
+   }
+   seen.add(key);out.push(f);
  };
- const fixtureLines=[];
+
+ // Primary parser: Sky groups fixtures under competition headings. Only anchors in a supported
+ // section are considered, and every resulting row is checked against COMPETITIONS again.
  let currentComp=null;
- for(const line of bodyLines){
-   const c=headingName(line);
-   if(c){currentComp=c;continue;}
-   if(isKnownUnsupportedHeading(line)){currentComp=null;continue;}
-   if(!currentComp)continue;
-   const f=fixtureFromRaw(line,currentComp,date);
-   if(f)fixtureLines.push(f);
- }
- // Recover the actual Sky match-centre URL from the rendered fixture anchors by matching teams.
- // This avoids guessing IDs and also preserves the link needed later to resolve the Teams tab.
- const anchors=[...doc.querySelectorAll('a[href]')].map(a=>({
-   href:localHref(a.getAttribute('href')||a.href||''),
-   text:cleanText(a.textContent||''),
-   parent:cleanText(a.closest('li,article,div')?.innerText||'')
- })).filter(x=>x.href && /skysports\.com\/football\//i.test(x.href));
- const findHref=(f)=>{
-   const same=(a,b)=>cleanText(a).toLowerCase().replace(/[^a-z0-9]+/g,'')===cleanText(b).toLowerCase().replace(/[^a-z0-9]+/g,'');
-   const hit=anchors.find(a=>{
-     const blob=(a.text+' '+a.parent).toLowerCase();
-     return blob.includes(f.home.toLowerCase())&&blob.includes(f.away.toLowerCase())&&/\/football\/[^/]+\/\d+|\/football\/[^/]+$/i.test(a.href);
-   });
-   if(hit)return hit.href;
-   const fuzzy=anchors.find(a=>same(a.text,f.home)||same(a.text,f.away));
-   return fuzzy?.href||'';
- };
- fixtureLines.forEach(f=>{f.href=findHref(f);f.matchId=extractSkyMatchId(f.href);add(f)});
- // Anchor fallback only for supported sections where the accessible body text did not expose a fixture line.
- let currentAnchorComp=null;
- for(const a of [...doc.querySelectorAll('h1,h2,h3,h4,h5,h6,a[href]')]){
-   const txt=cleanText(a.textContent||'');if(!txt)continue;
-   const c=headingName(txt);
-   if(c){currentAnchorComp=c;continue;}
-   if(a.tagName?.match(/^H[1-6]$/i)){currentAnchorComp=null;continue;}
-   if(currentAnchorComp&&a.tagName==='A'){
-     const f=fixtureFromAnchor(a,currentAnchorComp,date);
-     if(f && f.time) add(f);
+ const headings=[...doc.body.querySelectorAll('h1,h2,h3,h4,h5,h6')];
+ for(const h of headings){
+   const c=normalizeCompetition(h.textContent||'');
+   currentComp=c;
+   if(!c) continue;
+   let el=h.nextElementSibling;
+   while(el && !/^H[1-6]$/.test(el.tagName)){
+     for(const a of el.querySelectorAll?.('a[href]')||[]){
+       const f=fixtureFromAnchor(a,currentComp,date); if(f)add(f);
+     }
+     if(el.matches?.('a[href]')){const f=fixtureFromAnchor(el,currentComp,date);if(f)add(f);}
+     el=el.nextElementSibling;
    }
  }
- return out.filter(f=>supported.has(f.comp));
+ // Secondary parser: use the rendered text line immediately following each competition heading.
+ // This is specifically for Sky's accessibility structure where the fixture anchor and description
+ // are siblings. We do not parse any line unless a supported competition has just been seen.
+ let bodyComp=null;
+ const lines=String(doc.body?.innerText||'').split(/\n+/).map(cleanText).filter(Boolean);
+ for(let i=0;i<lines.length;i++){
+   const line=lines[i];
+   const c=normalizeCompetition(line);
+   if(c){bodyComp=c;continue;}
+   if(/^(?:Football Calendar|Go to today|Today|Yesterday|Tomorrow|View full .* table)$/i.test(line))continue;
+   // Any obvious competition heading that is not supported terminates the current section.
+   if(/(?:league|cup|trophy|premiership|super league|nations league|international match|national league|premier league)/i.test(line) && !normalizeCompetition(line)){
+     bodyComp=null;continue;
+   }
+   if(bodyComp){
+     const f=fixtureFromRaw(line,bodyComp,date); if(f)add(f);
+   }
+ }
+ return out.filter(f=>COMPETITIONS.includes(f.comp));
 }
-
 async function loadSkyFixtures(date){
  const cache=db.fixtureCache?.[date]||{};
  const url=SKY_DAILY+date;
@@ -414,25 +415,42 @@ function extractSkyMatchId(href){
  const u=localHref(href); if(!u)return '';
  try{
    const x=new URL(u);
-   const m=x.pathname.match(/\/(?:teams|score|live|video|stats|report)\/(\d+)\/?$/i);
-   if(m)return m[1];
-   const direct=x.pathname.match(/^(?:\/football\/[^/]+)\/(\d+)\/?$/i);
-   return direct?direct[1]:'';
- }catch(e){
-   const m=String(href).match(/\/(?:teams|score|live|video|stats|report)\/(\d+)(?:\/|$)/i);
+   const m=x.pathname.match(/\/football\/[^/]+\/(\d+)\/?$/i);
    return m?m[1]:'';
- }
+ }catch(e){return ''}
+}
+function skyTeamsUrl(href){
+ const u=localHref(href); if(!u)return '';
+ try{
+   const x=new URL(u);
+   if(/\/teams\/\d+\/?$/i.test(x.pathname))return x.href;
+   const id=extractSkyMatchId(x.href);
+   const slug=x.pathname.match(/^\/football\/([^/]+)\/(?:\d+)?$/i);
+   if(id&&slug){x.pathname=`/football/${slug[1]}/teams/${id}`;x.search='';x.hash='';return x.href;}
+   return '';
+ }catch(e){return ''}
 }
 async function resolveSkyTeamsUrl(f){
  const href=localHref(f?.href||'');
  if(!href)return '';
  if(/\/teams\/\d+\/?(?:$|[?#])/i.test(href))return href;
- if(window.llBridge?.resolveTeams){
-   try{const exact=await window.llBridge.resolveTeams(href);if(exact && /\/teams\/\d+\/?(?:$|[?#])/i.test(exact))return exact}catch(e){}
- }
+ // Sky's current match-centre and Teams routes use the same match ID for the same fixture.
+ // Use the exact fixture ID first, then inspect the rendered match centre for an explicit Teams link.
+ const sameId=skyTeamsUrl(href);
+ if(sameId)return sameId;
+ try{
+   const matchPage=await fetchSkyPage(href);
+   const links=matchPage.links||[];
+   const direct=links.find(x=>/\/football\/[^/]+\/teams\/\d+\/?$/i.test(x.href||''));
+   if(direct?.href)return localHref(direct.href);
+   const named=links.find(x=>/^teams$/i.test(cleanText(x.text||x.aria||'')) && /skysports\.com/i.test(x.href||''));
+   if(named?.href)return localHref(named.href);
+   const doc=new DOMParser().parseFromString(String(matchPage.html||''),'text/html');
+   const a=[...doc.querySelectorAll('a[href]')].find(x=>/\/football\/[^/]+\/teams\/\d+\/?$/i.test(x.getAttribute('href')||''));
+   if(a)return localHref(a.getAttribute('href')||a.href||'');
+ }catch(e){}
  return '';
 }
-
 async function getLineups(){
  if(!current?.href){toast('This fixture has no Sky Sports match link yet.');return}
  document.getElementById('getLineupsBtn').textContent='Loading…';document.getElementById('getLineupsBtn').disabled=true;
@@ -452,97 +470,62 @@ async function getLineups(){
 }
 
 function parseLineupText(raw,f){
- // Sky's Teams page has a predictable structure after the "Teams" heading:
- // Image: <team>, <short team name>, then NUMBER/PLAYER pairs, followed by
- // "Substitutes", then the second team's Image marker and the same structure.
- // We deliberately ignore everything before "Teams" so navigation/league tables
- // cannot be mistaken for players.
- let text=raw;
- try{const j=JSON.parse(raw);text=j.text||j.content||j.data?.content||raw}catch(e){}
- if(/<html[\s>]/i.test(String(text))){
+ let text=String(raw||'');
+ if(/<html[\s>]/i.test(text)){
    try{
-     const doc=new DOMParser().parseFromString(String(text),'text/html');
+     const doc=new DOMParser().parseFromString(text,'text/html');
      doc.querySelectorAll('img[alt]').forEach(img=>{
-       const alt=(img.getAttribute('alt')||'').trim();
-       if(alt){const marker=doc.createTextNode('\nImage: '+alt+'\n');img.replaceWith(marker)}
+       const alt=cleanText(img.getAttribute('alt')||'');
+       if(alt){const marker=doc.createTextNode(`\nImage: ${alt}\n`);img.replaceWith(marker);}
      });
      text=doc.body?.innerText||doc.body?.textContent||text;
    }catch(e){}
  }
- text=String(text).replace(/\\n/g,'\n');
- const lines=text.split(/\n+/).map(x=>x.replace(/[*•]/g,' ').replace(/\s+/g,' ').trim()).filter(Boolean);
-
- const cleanTeam=s=>String(s||'').toLowerCase()
-   .replace(/[’']/g,'')
-   .replace(/\b(fc|afc|women|womens|ladies)\b/g,' ')
-   .replace(/[^a-z0-9]+/g,' ')
-   .trim();
- const teamTokens=s=>cleanTeam(s).split(' ').filter(Boolean);
- const teamMatches=(candidate,team)=>{
-   const a=cleanTeam(candidate), b=cleanTeam(team);
-   if(!a||!b)return false;
-   if(a===b||a.includes(b)||b.includes(a))return true;
-   const at=teamTokens(a),bt=teamTokens(b);
-   return at.length>0&&bt.length>0&&(at.every(x=>bt.includes(x))||bt.every(x=>at.includes(x)));
+ text=text.replace(/\\n/g,'\n');
+ const lines=text.split(/\n+/).map(x=>cleanText(x.replace(/[*•]/g,' '))).filter(Boolean);
+ const norm=s=>cleanText(s).toLowerCase().replace(/[’']/g,'').replace(/\b(fc|afc|women|womens|ladies)\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim();
+ const token=s=>norm(s).split(' ').filter(Boolean);
+ const matchTeam=(a,b)=>{
+   const A=norm(a),B=norm(b); if(!A||!B)return false;
+   if(A===B||A.includes(B)||B.includes(A))return true;
+   const at=token(a),bt=token(b);return at.length>0&&bt.length>0&&(at.every(x=>bt.includes(x))||bt.every(x=>at.includes(x)));
  };
- const isImageTeam=l=>/^image\s*:/i.test(l);
- const imageTeamName=l=>String(l).replace(/^image\s*:\s*/i,'').trim();
- const isNumber=l=>/^\d{1,3}$/.test(l);
- const isEventLine=l=>/^\d{1,3}(?:\+\d+)?'\d{1,3}(?:st|nd|rd|th)\s+minute(?:\s|$)/i.test(l)||/^\d{1,3}(?:st|nd|rd|th)?\s+minute(?:\s|$)/i.test(l)||/^\d{1,3}(?:\+\d+)?(?:st|nd|rd|th)?\s*'\s*minute(?:\s|$)/i.test(l);
- const stopLine=l=>/^(match officials|key|match stats|latest .* odds|summary|live reporting)$/i.test(l);
- const badPlayer=l=>/^(teams|substitutes|manager|formation|match officials|key|home|away|line-ups|lineups)$/i.test(l)||/^manager\s*:/i.test(l)||/^formation\s*:/i.test(l);
-
- // Only inspect the actual Teams section. This prevents the page's navigation,
- // league tables and other team names from ever entering the lineup arrays.
- let teamsStart=lines.findIndex(l=>/^teams$/i.test(l));
- if(teamsStart<0) return {home:[],away:[],homeSubs:[],awaySubs:[]};
-
- const sections=[];
- let currentSection=null;
- for(let i=teamsStart+1;i<lines.length;i++){
+ const bad=/^(teams|substitutes|match officials|key|match stats|latest .* odds|summary|live reporting|manager|formation)$/i;
+ const isNum=s=>/^\d{1,3}$/.test(s);
+ const event=/^\d{1,3}(?:\+\d+)?(?:st|nd|rd|th)?\s*minute/i;
+ const start=lines.findIndex(x=>/^teams$/i.test(x));
+ if(start<0)return {home:[],away:[],homeSubs:[],awaySubs:[]};
+ const sections=[];let section=null;
+ for(let i=start+1;i<lines.length;i++){
    const l=lines[i];
-   if(stopLine(l)) break;
-   if(isImageTeam(l)){
-     const label=imageTeamName(l);
-     const matchesHome=teamMatches(label,f.home);
-     const matchesAway=teamMatches(label,f.away);
-     if(matchesHome||matchesAway){
-       currentSection={side:matchesHome?'home':'away',label,starters:[],subs:[],mode:'starters'};
-       sections.push(currentSection);
-       continue;
-     }
-   }
-   if(!currentSection) continue;
-   if(/^substitutes$/i.test(l)){currentSection.mode='subs';continue;}
-   if(isImageTeam(l)){
-     // An unrelated image/team marker: do not let it bleed into the current team.
+   if(/^match officials$/i.test(l)||/^key$/i.test(l))break;
+   const isImage=/^image\s*:/i.test(l);
+   let label=l.replace(/^image\s*:\s*/i,'').trim();
+   if(isImage){
+     if(matchTeam(label,f.home)) section={side:'home',starters:[],subs:[],mode:'starters'};
+     else if(matchTeam(label,f.away)) section={side:'away',starters:[],subs:[],mode:'starters'};
+     else section=null;
+     if(section)sections.push(section);
      continue;
    }
-   if(badPlayer(l)||/^image\s*:/i.test(l)) continue;
-
-   // Sky renders each player as two adjacent text lines: shirt number then name.
-   if(isNumber(l)){
+   // Sky often follows the image marker with a short display name (e.g. "Newcastle").
+   // That is a label, not a second team section, so keep the current section active.
+   if(!section)continue;
+   if(/^substitutes$/i.test(l)){section.mode='subs';continue;}
+   if(bad.test(l)||event.test(l))continue;
+   if(isNum(l)){
      let j=i+1;
-     while(j<lines.length && isEventLine(lines[j])) j++;
+     while(j<lines.length && event.test(lines[j]))j++;
      const name=lines[j];
-     if(name && !isNumber(name) && !badPlayer(name) && name.length<=60 && !/^image\s*:/i.test(name)){
-       const player={num:l,name:name.replace(/\s+\(c\)$/i,'').trim()};
-       currentSection[currentSection.mode==='subs'?'subs':'starters'].push(player);
+     if(name && !isNum(name) && !bad.test(name) && !/^image\s*:/i.test(name) && name.length<=70){
+       section[section.mode==='subs'?'subs':'starters'].push({num:l,name:name.replace(/\s+\(c\)$/i,'').trim()});
        i=j;
      }
    }
  }
-
- const homeSection=sections.find(s=>s.side==='home');
- const awaySection=sections.find(s=>s.side==='away');
- return {
-   home:(homeSection?.starters||[]).slice(0,11),
-   away:(awaySection?.starters||[]).slice(0,11),
-   homeSubs:homeSection?.subs||[],
-   awaySubs:awaySection?.subs||[]
- };
+ const h=sections.find(x=>x.side==='home'),a=sections.find(x=>x.side==='away');
+ return {home:(h?.starters||[]).slice(0,11),away:(a?.starters||[]).slice(0,11),homeSubs:h?.subs||[],awaySubs:a?.subs||[]};
 }
-
 function camerasForLog(){const x=selectedLog();return x?(x.cameras||[]):[]}
 function cameraPresets(){if(!current)return [];db.cameraPresets=db.cameraPresets||{};db.cameraPresets[current.id]=db.cameraPresets[current.id]||[];return db.cameraPresets[current.id]}
 function renderCameras(){const box=document.getElementById('cameraButtons');if(!box)return;const cams=camerasForLog();const custom=cameraPresets();const all=[...Array.from({length:20},(_,i)=>String(i+1)),...custom];box.innerHTML=all.map(n=>`<button class="cam ${cams.includes(n)?'active':''}" data-cam="${esc(n)}">${esc(n)}</button>`).join('')}
