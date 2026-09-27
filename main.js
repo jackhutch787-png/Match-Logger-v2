@@ -54,16 +54,24 @@ async function loadSkyRendered(url){
     await win.loadURL(url,{
       extraHeaders:'Accept-Language: en-GB,en;q=0.9\r\n'
     });
-    // Sky's Scores & Fixtures page is client-rendered. Give its data layer time to populate.
-    // Wait until Sky's fixture content has rendered. The page is client-rendered,
-    // and a fixed short delay was not reliable on slower work machines.
+    // Sky pages are client-rendered. Wait for the actual page content we need:
+    // Scores & Fixtures, a match-centre Teams link, or a Teams page itself.
     const started=Date.now();
-    while(Date.now()-started<12000){
-      const ready=await win.webContents.executeJavaScript(`document.body && /Scores & Fixtures|Football Calendar/i.test(document.body.innerText||'')`,true).catch(()=>false);
+    while(Date.now()-started<15000){
+      const ready=await win.webContents.executeJavaScript(`(() => {
+        const body=(document.body?.innerText||'');
+        const hrefs=[...document.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')||'');
+        const path=location.pathname||'';
+        const isTeamsPage=/\/teams\/\d+\/?$/i.test(path);
+        const hasTeamsLink=hrefs.some(h=>/\/teams\/\d+\/?(?:[?#].*)?$/i.test(h));
+        const hasFixturePage=/Scores & Fixtures|Football Calendar/i.test(body);
+        const hasTeamsHeading=/\\bTeams\\b/i.test(body);
+        return body.length>1000 && (isTeamsPage || hasTeamsLink || hasFixturePage || hasTeamsHeading);
+      })()`,true).catch(()=>false);
       if(ready) break;
       await wait(500);
     }
-    await wait(1000);
+    await wait(500);
     const result=await win.webContents.executeJavaScript(`(() => ({
       html: document.documentElement.outerHTML,
       text: document.body ? document.body.innerText : '',
@@ -79,6 +87,27 @@ async function loadSkyRendered(url){
 }
 
 ipcMain.handle('http-fetch', async (_event, url) => loadSkyRendered(url));
+
+ipcMain.handle('sky-resolve-teams', async (_event, url) => {
+  if(!/^https:\/\/(www\.)?skysports\.com\//i.test(url)) throw new Error('Only Sky Sports HTTPS URLs are permitted');
+  const page=await loadSkyRendered(url);
+  const win=ensureSkyWindow();
+
+  const found=await win.webContents.executeJavaScript(`(() => {
+    const links=[...document.querySelectorAll('a[href]')];
+    const candidates=links.map(a=>({
+      href:a.getAttribute('href')||'',
+      text:(a.innerText||a.textContent||'').trim(),
+      aria:a.getAttribute('aria-label')||''
+    })).filter(x=>/\/teams\/\d+\/?(?:[?#].*)?$/i.test(x.href) || /^teams$/i.test(x.text) || /^teams$/i.test(x.aria));
+    return candidates.length ? candidates[0].href : '';
+  })()`,true).catch(()=>'');
+
+  const htmlHref=String(page?.html||'').match(/href=["']([^"']*\/teams\/\d+[^"']*)["']/i)?.[1] || '';
+  const candidate=found || htmlHref;
+  if(!candidate) throw new Error('Sky match page did not expose a Teams link');
+  return new URL(candidate, 'https://www.skysports.com').href;
+});
 
 app.whenReady().then(()=>{
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback)=>callback(false));

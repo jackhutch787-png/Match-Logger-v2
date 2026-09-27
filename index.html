@@ -65,6 +65,25 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
 .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.setting{padding:13px}.setting h3{font-size:11px;margin:0 0 5px}.setting p{font-size:9px;color:#7f8e9b;line-height:1.5}.setting-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
 .toast{position:fixed;bottom:18px;right:18px;background:#152431;border:1px solid #33516a;color:#eaf2f8;border-radius:7px;padding:8px 11px;font-size:9px;opacity:0;transform:translateY(6px);pointer-events:none;transition:.15s;z-index:200}.toast.show{opacity:1;transform:none}
 @media(max-width:1000px){.sidebar{width:130px;flex-basis:130px}.match-grid{grid-template-columns:225px minmax(420px,1fr)}.keywords{grid-template-columns:repeat(3,1fr)}}
+
+/* v1.2.5 readability pass: slightly larger UI text without changing the layout. */
+body{font-size:14px}
+.nav button{font-size:11px}
+.top-status{font-size:10px}
+.btn{font-size:11px}
+.btn.small{font-size:10px}
+input,select,textarea{font-size:11px}
+.page-head h1{font-size:20px}
+.page-head .sub{font-size:10px}
+.tabs button{font-size:11px}
+.fixture .ftime{font-size:11px}.fixture .fdate{font-size:9px}.fixture .comp{font-size:9px}.fixture .teams{font-size:11px}
+.label{font-size:9px}.match-value{font-size:12px}.tc{font-size:15px}
+.banner{font-size:10px}
+.teamtab{font-size:11px}.player{font-size:10px;padding:6px 7px}.subs-label{font-size:9px}.search-player input{font-size:10px}
+.keyword{font-size:9px}.cam{font-size:9px}.ratebtn{font-size:11px}.ratebtn span{font-size:8px}.rating h4{font-size:9px}
+.event-title{font-size:10px}.event-title input{font-size:9px}.event-table{font-size:9px}.event-table th{font-size:8px}.event-table input{font-size:9px}
+.log-footer{font-size:9px}.toast{font-size:10px}
+.setting h3{font-size:12px}.setting p{font-size:10px}.setting-row{font-size:10px}
 </style>
 </head>
 <body>
@@ -81,7 +100,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
  <div class="sidebar-bottom">
   <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
-  <div class="app-version">v1.2.4</div>
+  <div class="app-version">v1.2.5</div>
  </div>
 </aside>
 <main class="main">
@@ -363,7 +382,10 @@ function openFixture(f){
  const existingTeamsMatch=existing.sourceHome&&existing.sourceAway&&
    cleanText(existing.sourceHome).toLowerCase()===cleanText(f.home).toLowerCase()&&
    cleanText(existing.sourceAway).toLowerCase()===cleanText(f.away).toLowerCase();
- if(!existingTeamsMatch||!Array.isArray(existing.home)||existing.home.length!==11||!Array.isArray(existing.away)||existing.away.length!==11){
+ // Never trust an automatically imported Sky sheet from an older build.
+ // Manual Team Sheets are preserved; automatic sheets are refreshed by Get Line-ups.
+ const isAutoSheet=!!existing.sourceUrl || existing.source==='sky';
+ if(isAutoSheet || !existingTeamsMatch || !Array.isArray(existing.home)||existing.home.length!==11||!Array.isArray(existing.away)||existing.away.length!==11){
    delete db.sheets[f.id];
  }
  saveDB();showView('logger');
@@ -423,32 +445,34 @@ function skyTeamsUrl(href){
 async function resolveSkyTeamsUrl(f){
  const href=localHref(f?.href||'');
  if(!href)return '';
- // If the fixture already points directly at Sky's Teams page, use it.
- if(/\/teams\/\d+\/?(?:$|[?#])/i.test(href))return href;
- // Do not guess the match ID from the fixture URL. Sky's fixture links can use
- // opaque IDs, while the Teams tab uses a different numeric ID. Instead, load
- // the match centre and follow Sky's own Teams link.
+ // Best path: ask the Electron/Sky renderer to inspect the actual match centre
+ // and return Sky's real Teams href. Sky uses a different numeric ID on /teams/.
+ if(window.llBridge?.resolveSkyTeams){
+   try{
+     const exact=await window.llBridge.resolveSkyTeams(href);
+     if(exact && /\/teams\/\d+\/?(?:$|[?#])/i.test(exact))return exact;
+   }catch(e){}
+ }
+ // Fallback: inspect the rendered match-centre HTML in the renderer.
  try{
    const matchPage=(await fetchSkyPage(href)).text;
    const doc=new DOMParser().parseFromString(String(matchPage),'text/html');
-   const links=[...doc.querySelectorAll('a[href]')];
-   const teamLink=links.find(a=>{
+   const teamLink=[...doc.querySelectorAll('a[href]')].find(a=>{
      const label=cleanText(a.textContent||a.getAttribute('aria-label')||'');
      const h=a.getAttribute('href')||'';
-     return /\/teams\/\d+\/?$/i.test(h) || /^teams$/i.test(label);
+     return /\/teams\/\d+\/?(?:[?#].*)?$/i.test(h) || /^teams$/i.test(label);
    });
    if(teamLink){
-     const h=teamLink.getAttribute('href')||teamLink.href||'';
-     const full=localHref(h);
+     const full=localHref(teamLink.getAttribute('href')||teamLink.href||'');
+     if(full && /\/teams\/\d+\/?(?:$|[?#])/i.test(full))return full;
+   }
+   const htmlHref=String(matchPage).match(/href=["']([^"']*\/teams\/\d+[^"']*)["']/i)?.[1]||'';
+   if(htmlHref){
+     const full=localHref(htmlHref);
      if(full)return full;
    }
- }catch(e){
-   // Fall through to deterministic URL candidates below.
- }
- // Fallbacks for match URLs that already contain a numeric ID.
- const derived=skyTeamsUrl(href);
- if(derived && /\/teams(?:\/\d+)?(?:$|[?#])/i.test(derived))return derived;
- return '';
+ }catch(e){}
+ throw Error('Sky match centre did not expose its Teams link');
 }
 async function getLineups(){
  if(!current?.href){toast('This fixture has no Sky Sports match link yet.');return}
@@ -459,7 +483,7 @@ async function getLineups(){
    const raw=(await fetchSkyPage(teamsUrl)).text;
    const parsed=parseLineupText(raw,current);
    if(parsed.home.length!==11 || parsed.away.length!==11)throw Error(`Incomplete line-up: ${parsed.home.length}/${parsed.away.length}`);
-   db.sheets[current.id]={...getSheet(current),...parsed,sourceHome:current.home,sourceAway:current.away,sourceUrl:teamsUrl};saveDB();renderLineups();document.getElementById('loggerBanner').textContent='Team sheets loaded — Sky Sports line-ups imported.';toast('Sky Sports line-ups loaded');
+   db.sheets[current.id]={...getSheet(current),...parsed,source:'sky',sourceHome:current.home,sourceAway:current.away,sourceUrl:teamsUrl};saveDB();renderLineups();document.getElementById('loggerBanner').textContent='Team sheets loaded — Sky Sports line-ups imported.';toast('Sky Sports line-ups loaded');
  }catch(e){
    const detail=String(e?.message||e||'Unknown error');
    document.getElementById('loggerBanner').textContent=`Sky Sports line-ups could not be read (${detail}). Use Team Sheets for a manual fallback.`;
