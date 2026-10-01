@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LL Match Logger v2 — Sky Sports</title>
+<title>LL Match Logger v2.1 — Sky Sports</title>
 <style>
 :root{
  --bg:#081019;--panel:#101a25;--panel2:#14202c;--panel3:#182735;--line:#223140;
@@ -72,8 +72,8 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
 <aside class="sidebar">
  <div class="brand"><span class="brandmark">✓</span> LL Match Logger</div>
  <nav class="nav">
-  <button data-view="logger" class="active">▣ &nbsp; Logger</button>
-  <button data-view="matches">▦ &nbsp; Matches</button>
+  <button data-view="logger">▣ &nbsp; Logger</button>
+  <button data-view="matches" class="active">▦ &nbsp; Matches</button>
   <button data-view="reports">▥ &nbsp; Reports</button>
   <button data-view="interviews">♟ &nbsp; Interview Logger</button>
   <button data-view="settings">⚙ &nbsp; Settings</button>
@@ -81,14 +81,14 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
  <div class="sidebar-bottom">
   <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
-  <div class="app-version">v2.0.0</div>
+  <div class="app-version">v2.1.0</div>
  </div>
 </aside>
 <main class="main">
  <div class="top"><div class="top-spacer"></div><div class="top-status" id="globalStatus">Sky Sports data · ready</div></div>
  <div class="content">
 
-  <section id="matchesView" class="view">
+  <section id="matchesView" class="view active">
    <div class="page-head"><div><h1>Matches</h1><div class="sub" id="fixtureCount">Sky Sports supported fixtures</div></div><div class="page-actions"><button class="btn" id="refreshBtn">Refresh fixtures</button><button class="btn blue" id="manualBtn">Manual match</button></div></div>
    <div class="tabs"><button class="active" data-matchtab="fixtures">Fixtures</button><button data-matchtab="saved">Saved logs</button></div>
    <div id="fixturesTab">
@@ -98,7 +98,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
    <div id="savedTab" style="display:none"></div>
   </section>
 
-  <section id="loggerView" class="view active">
+  <section id="loggerView" class="view">
    <div class="match-shell">
     <div class="match-head card">
      <div><div class="label">Competition</div><select id="loggerComp" style="width:170px"></select></div>
@@ -175,7 +175,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
 
 <script>
 const SKY_DAILY='https://www.skysports.com/football-scores-fixtures/';
-const STORE='LLMatchLoggerSkyDesktopV2';
+const STORE='LLMatchLoggerSkyDesktopV21';
 const COMPETITIONS=['Premier League','Championship','League One','League Two','WSL','EFL Trophy','Carabao Cup','UEFA Europa League','UEFA Europa Conference League'];
 const COMP_ALIASES={
  'Premier League':'premier league',
@@ -279,7 +279,40 @@ function fixtureFromAnchor(a,comp,date){
    if(canonical){const f=makeFixture(canonical[1],canonical[2],canonical[3],comp,date,href,raw);if(f)return f;}
  }
  for(const raw of candidates){const f=fixtureFromRaw(raw,comp,date,href);if(f)return f;}
- return null;
+ return fixtureFromSlug(href,comp,date,candidates[0]||'');
+}
+function fixtureFromSlug(href,comp,date,raw=''){
+ const u=localHref(href);if(!u)return null;
+ try{
+   const x=new URL(u);const m=x.pathname.match(/^\/football\/([^/]+)\/(?:live\/|report\/|teams\/)?(\d+)\/?$/i);if(!m)return null;
+   const slug=m[1];if(!/-vs-/i.test(slug))return null;
+   const [hs,as]=slug.split(/-vs-/i);if(!hs||!as)return null;
+   const pretty=z=>z.split('-').map(w=>/^(fc|afc|qpr)$/i.test(w)?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+   return makeFixture(pretty(hs),pretty(as),'',comp,date,u,raw);
+ }catch(e){return null}
+}
+function matchPageKickoff(text){
+ const t=cleanText(String(text||''));
+ let m=t.match(/\b(\d{1,2}:\d{2}\s*(?:am|pm))\s*,\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i);
+ if(m)return m[1].replace(/\s+/g,'');
+ m=t.match(/\b(\d{1,2}\.\d{2}\s*(?:am|pm))\s*,\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i);
+ return m?m[1].replace('.',':').replace(/\s+/g,''):'';
+}
+async function enrichFixture(f){
+ if(!f?.href || f.time)return f;
+ try{
+   const page=await fetchSkyPage(f.href);
+   const time=matchPageKickoff(page.text||'');
+   const links=page.links||[];
+   const teams=links.find(x=>/\/football\/[^/]+\/teams\/\d+\/?(?:[?#].*)?$/i.test(x.href||''));
+   return {...f,time:time||f.time,teamsHref:teams?.href?localHref(teams.href):(f.teamsHref||'')};
+ }catch(e){return f}
+}
+async function enrichMissingKickoffs(rows){
+ const out=[...rows];let cursor=0;
+ async function worker(){while(cursor<out.length){const i=cursor++;if(!out[i].time&&out[i].href)out[i]=await enrichFixture(out[i]);}}
+ await Promise.all(Array.from({length:Math.min(5,out.length)},()=>worker()));
+ return out;
 }
 function parseSkyDailyPage(raw,date){
  const out=[],seen=new Set();
@@ -297,22 +330,26 @@ function parseSkyDailyPage(raw,date){
    seen.add(key);out.push(f);
  };
 
- // Primary parser: Sky groups fixtures under competition headings. Only anchors in a supported
- // section are considered, and every resulting row is checked against COMPETITIONS again.
+ // Primary parser: walk headings and fixture links in true document order.
+ // This is deliberately NOT a sibling-subtree scan: Sky nests multiple competitions inside
+ // shared containers, which previously caused WSL2/Irish/etc fixtures to inherit the WSL label.
  let currentComp=null;
- const headings=[...doc.body.querySelectorAll('h1,h2,h3,h4,h5,h6')];
- for(const h of headings){
-   const c=normalizeCompetition(h.textContent||'');
-   currentComp=c;
-   if(!c) continue;
-   let el=h.nextElementSibling;
-   while(el && !/^H[1-6]$/.test(el.tagName)){
-     for(const a of el.querySelectorAll?.('a[href]')||[]){
-       const f=fixtureFromAnchor(a,currentComp,date); if(f)add(f);
-     }
-     if(el.matches?.('a[href]')){const f=fixtureFromAnchor(el,currentComp,date);if(f)add(f);}
-     el=el.nextElementSibling;
+ const ordered=[...doc.body.querySelectorAll('h1,h2,h3,h4,h5,h6,a[href]')];
+ for(const el of ordered){
+   if(/^H[1-6]$/.test(el.tagName)){
+     // Every heading resets the section. Unsupported competition headings therefore stop parsing.
+     const heading=cleanText(el.textContent||'');
+     const mapped=normalizeCompetition(heading);
+     if(mapped){ currentComp=mapped; continue; }
+     if(/league|cup|trophy|premiership|international|nations|championship/i.test(heading)) currentComp=null;
+     continue;
    }
+   if(!currentComp) continue;
+   const href=localHref(el.getAttribute('href')||el.href||'');
+   // Only football match-centre links can become fixtures. Calendar/table/navigation links are ignored.
+   if(!/\/football\/[^/]+\/(?:live\/|report\/|teams\/)?\d+\/?(?:[?#].*)?$/i.test(href)) continue;
+   const f=fixtureFromAnchor(el,currentComp,date) || fixtureFromSlug(href,currentComp,date,el.textContent||'');
+   if(f)add(f);
  }
  // Secondary parser: use the rendered text line immediately following each competition heading.
  // This is specifically for Sky's accessibility structure where the fixture anchor and description
@@ -340,7 +377,9 @@ async function loadSkyFixtures(date){
  const result=await fetchSkyPage(url);
  const rows=parseSkyDailyPage(result.text,date);
  // Hard isolation: never return anything outside the nine explicitly supported competitions.
- const allowed=new Set(COMPETITIONS);const filtered=rows.filter(f=>allowed.has(f.comp));
+ const allowed=new Set(COMPETITIONS);let filtered=rows.filter(f=>allowed.has(f.comp));
+ // Completed Sky score pages often replace the KO with FT. Pull the original KO from each match centre.
+ filtered=await enrichMissingKickoffs(filtered);
  if(filtered.length){
    db.fixtureCache[date]={};for(const f of filtered){(db.fixtureCache[date][f.comp] ||= []).push(f)}saveDB();
    return {rows:filtered,errors:[],via:[`daily:${result.via}`],url};
@@ -431,6 +470,8 @@ function skyTeamsUrl(href){
  }catch(e){return ''}
 }
 async function resolveSkyTeamsUrl(f){
+ const explicit=localHref(f?.teamsHref||'');
+ if(explicit)return explicit;
  const href=localHref(f?.href||'');
  if(!href)return '';
  if(/\/teams\/\d+\/?(?:$|[?#])/i.test(href))return href;
@@ -452,7 +493,7 @@ async function resolveSkyTeamsUrl(f){
  return '';
 }
 async function getLineups(){
- if(!current?.href){toast('This fixture has no Sky Sports match link yet.');return}
+ if(!current?.href && !current?.teamsHref){toast('This fixture has no Sky Sports match link. Refresh fixtures and try again.');return}
  document.getElementById('getLineupsBtn').textContent='Loading…';document.getElementById('getLineupsBtn').disabled=true;
  try{
    const teamsUrl=await resolveSkyTeamsUrl(current);
