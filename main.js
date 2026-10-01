@@ -78,7 +78,52 @@ async function loadSkyRendered(url){
   }
 }
 
+function teamSlug(name){
+  return String(name||'').toLowerCase()
+    .replace(/&/g,' and ').replace(/[’']/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+function normTeam(name){
+  return String(name||'').toLowerCase().replace(/[’']/g,'').replace(/\b(fc|afc|women|womens|ladies)\b/g,' ').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
+}
+async function resolveSkyFixture(fixture){
+  const home=String(fixture?.home||'').trim(), away=String(fixture?.away||'').trim();
+  if(!home||!away) throw new Error('Both teams are required');
+  const candidates=[];
+  if(fixture?.href && SKY_ORIGIN_RE.test(fixture.href)) candidates.push(fixture.href);
+  candidates.push(`https://www.skysports.com/${teamSlug(home)}`);
+  candidates.push(`https://www.skysports.com/${teamSlug(away)}`);
+  const H=normTeam(home), A=normTeam(away);
+  for(const url of [...new Set(candidates)]){
+    try{
+      const page=await loadSkyRendered(url);
+      const found=await ensureSkyWindow().webContents.executeJavaScript(`(() => {
+        const norm=s=>String(s||'').toLowerCase().replace(/[’']/g,'').replace(/\\b(fc|afc|women|womens|ladies)\\b/g,' ').replace(/[^a-z0-9]+/g,' ').replace(/\\s+/g,' ').trim();
+        const H=${JSON.stringify(H)}, A=${JSON.stringify(A)};
+        const hasTeams=t=>{const n=norm(t);return H&&A&&n.includes(H)&&n.includes(A)};
+        const els=[...document.querySelectorAll('a[href],article,li,div')].filter(e=>hasTeams(e.innerText||e.textContent||''));
+        els.sort((a,b)=>(a.innerText||'').length-(b.innerText||'').length);
+        for(const el of els.slice(0,80)){
+          const text=(el.innerText||el.textContent||'').trim();
+          const anchors=[...(el.matches?.('a[href]')?[el]:[]),...el.querySelectorAll?.('a[href]')||[]];
+          const links=anchors.map(a=>a.href).filter(Boolean);
+          const match=links.find(h=>/\\/football\\/[^/]+\\/(?:report\\/|teams\\/|stats\\/)?\\d+\\/?(?:$|[?#])/i.test(h));
+          if(match || /\\b(?:\\d{1,2}[:.]\\d{2}\\s*(?:am|pm)|kick-off at)\\b/i.test(text)) return {text,href:match||'',links};
+        }
+        return null;
+      })()`,true).catch(()=>null);
+      if(found){
+        let href=found.href||'';
+        if(href && /\/(?:report|stats)\/(\d+)/i.test(href)) href=href.replace(/\/(?:report|stats)\//i,'/teams/');
+        return {ok:true,href,text:found.text||'',sourceUrl:page.url||url};
+      }
+    }catch(e){}
+  }
+  return {ok:false,href:'',text:'',sourceUrl:''};
+}
+
 ipcMain.handle('http-fetch', async (_event, url) => loadSkyRendered(url));
+ipcMain.handle('sky-resolve-fixture', async (_event, fixture) => resolveSkyFixture(fixture));
 
 app.whenReady().then(()=>{
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback)=>callback(false));

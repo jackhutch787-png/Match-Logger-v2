@@ -1,7 +1,7 @@
 {
   "name": "ll-match-logger",
-  "version": "2.1.0",
-  "description": "LL Match Logger v2.1 - Sky Sports desktop app",
+  "version": "2.2.0",
+  "description": "LL Match Logger v2.2 - Sky Sports desktop app",
   "main": "main.js",
   "author": "LL Match Logger",
   "license": "MIT",

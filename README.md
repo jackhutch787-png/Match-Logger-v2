@@ -1,6 +1,13 @@
-# LL Match Logger v2
+# LL Match Logger v2.2
 
 Sky Sports-based Windows football live logging application.
+
+## v2.2 corrections
+- Opens on **Matches / Fixtures** by default.
+- Hard whitelist of exactly nine competitions; unsupported headings terminate the active section so WSL2/Irish/Scottish/etc. cannot inherit a supported label.
+- Preserves scheduled kick-off times from Sky and, for completed fixtures where the daily scores page only shows FT, resolves the fixture through the relevant Sky team page to recover the original kick-off.
+- Resolves a real Sky match/Teams link lazily from the selected fixture when the daily fixture card has no usable href.
+- Imports line-ups only when 11 starters are found for each side. Manual Team Sheets remains available as fallback.
 
 ## Supported competitions
 - Premier League
@@ -13,9 +20,5 @@ Sky Sports-based Windows football live logging application.
 - UEFA Europa League
 - UEFA Europa Conference League
 
-The fixture importer uses a hard whitelist of these nine competitions. Other Sky Sports football competitions are ignored.
-
-Line-ups are requested per selected fixture from Sky Sports' match/Teams page. Automatic line-ups are accepted only when 11 starters are recovered for both teams; Team Sheets remains available for manual entry.
-
 ## Build
-Use the existing GitHub Actions workflow: `.github/workflows/build-windows.yml`.
+Keep the existing GitHub Actions workflow at `.github/workflows/build-windows.yml` and run **Build Windows App**.
