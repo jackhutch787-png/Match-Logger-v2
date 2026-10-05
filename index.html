@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LL Match Logger v2.3 — Sky Sports</title>
+<title>LL Match Logger v2.4 — FotMob</title>
 <style>
 :root{
  --bg:#081019;--panel:#101a25;--panel2:#14202c;--panel3:#182735;--line:#223140;
@@ -11,7 +11,7 @@
  --yellow:#f4c542;--red:#ef6262;--input:#0d1721;
 }
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:13px}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:15px}
 button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:default}
 .app{height:100vh;display:flex}
 .sidebar{width:158px;flex:0 0 158px;background:#0d1721;border-right:1px solid #182532;display:flex;flex-direction:column}
@@ -40,14 +40,14 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
 .fixture:hover{background:#152431;border-color:#2e4557}.fixture .ftime{font-weight:850;font-size:12px}.fixture .fdate{font-size:8px;color:#687886;margin-top:2px}.fixture .comp{font-size:8px;color:#8a98a4}.fixture .teams{font-size:12px;font-weight:700}.fixture .teams span{color:#5f7180;margin:0 6px}.fixture .bar{width:3px;height:22px;background:#267be8;display:inline-block;margin-right:8px;border-radius:2px;vertical-align:middle}
 .match-shell{height:100%;display:flex;flex-direction:column;min-height:0}
 .match-head{display:grid;grid-template-columns:180px 1fr auto auto auto auto;gap:14px;align-items:center;padding:11px 13px;margin-bottom:7px}
-.label{font-size:8px;color:#71818f;text-transform:uppercase;letter-spacing:.9px;font-weight:850}.match-value{font-size:11px;font-weight:800;margin-top:4px}.tc{color:#2e8bff;font-size:14px;font-weight:850;font-variant-numeric:tabular-nums}
+.label{font-size:8px;color:#71818f;text-transform:uppercase;letter-spacing:.9px;font-weight:850}.match-value{font-size:11px;font-weight:800;margin-top:4px}.tc{color:#2e8bff;font-size:18px;font-weight:850;font-variant-numeric:tabular-nums}
 .banner{padding:8px 11px;background:#092b1c;border:1px solid #174b31;color:#62d995;border-radius:7px;font-size:9px;font-weight:700;margin-bottom:7px}
-.match-grid{flex:1;min-height:0;display:grid;grid-template-columns:260px minmax(500px,1fr);gap:7px}
+.match-grid{flex:1;min-height:0;display:grid;grid-template-columns:480px minmax(620px,1fr);gap:8px}
 .lineup-card,.logger-card{min-height:0;overflow:hidden}
 .lineup-card{display:flex;flex-direction:column}.lineup-head{display:grid;grid-template-columns:1fr 1fr}.teamtab{padding:9px 6px;text-align:center;font-size:10px;font-weight:850;border-bottom:1px solid var(--line);background:#172330}.teamtab.home{background:#0758a9}.teamtab.away{background:#e9edf0;color:#101820}
-.lineups{flex:1;overflow:auto;padding:5px}
-.player{width:100%;display:grid;grid-template-columns:27px 1fr;border:0;border-bottom:1px solid #1b2936;background:transparent;color:#dbe4ea;padding:5px 7px;text-align:left;font-size:9px}.player:hover{background:#182a3a}.player .num{color:#82909d}.player .pname{font-weight:700}.player.selected{background:#173c68;color:#fff}
-.subs-label{text-align:center;color:#81909d;font-size:8px;font-weight:850;padding:6px 0 4px}.manual-edit{margin:6px}.search-player{margin:5px 6px}.search-player input{width:100%;font-size:9px}
+.lineups{flex:1;overflow:hidden;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:start}.team-lineup{min-width:0;border:1px solid #1d2d3b;border-radius:7px;overflow:hidden;background:#0d1721}.team-lineup-title{font-size:10px;color:#a9b6c1;padding:5px 7px;text-transform:uppercase;font-weight:850;background:#14202c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player{width:100%;display:grid;grid-template-columns:25px 1fr;border:0;border-bottom:1px solid #1b2936;background:transparent;color:#dbe4ea;padding:4px 6px;text-align:left;font-size:10px;line-height:1.15}.player:hover{background:#182a3a}.player .num{color:#82909d}.player .pname{font-weight:700}.player.selected{background:#173c68;color:#fff}
+.subs-label{text-align:center;color:#9ba9b5;font-size:9px;font-weight:850;padding:5px 0 3px;background:#111e29}.manual-edit{margin:6px}.search-player{margin:5px 6px}.search-player input{width:100%;font-size:9px}
 .logger-card{display:flex;flex-direction:column}
 .keyword-row{display:grid;grid-template-columns:1fr 145px;gap:7px;padding:7px}
 .keywords{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
@@ -55,7 +55,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
 .rating{border:1px solid var(--line);background:#121d28;border-radius:7px;padding:5px}.rating h4{font-size:8px;color:#728290;margin:2px 5px 5px;text-transform:uppercase}.ratebtn{width:100%;border:1px solid #263644;background:#15212c;color:#f3c844;border-radius:6px;margin:3px 0;padding:6px;font-size:10px}.ratebtn span{display:block;font-size:7px;color:#788895;margin-top:2px}
 .event-wrap{flex:1;min-height:0;border:1px solid var(--line);margin:0 7px 7px;border-radius:7px;display:flex;flex-direction:column;overflow:hidden}
 .event-title{display:flex;align-items:center;padding:8px 9px;border-bottom:1px solid var(--line);font-size:9px;font-weight:850;color:#81909d}.event-title input{margin-left:auto;width:145px;padding:5px 7px;font-size:8px}
-.event-table{width:100%;border-collapse:collapse;font-size:8px}.event-table th{text-align:left;color:#738390;font-size:7px;text-transform:uppercase;padding:7px;border-bottom:1px solid #202e3a}.event-table td{padding:6px 7px;border-bottom:1px solid #192733;vertical-align:middle}.event-table tr.active{background:#18365a}.event-table tr:hover{background:#142a40}.event-table input{width:100%;padding:5px;font-size:8px}.xbtn{border:0;background:none;color:#657582;font-size:12px}.xbtn:hover{color:#ff7474}
+.event-table{width:100%;border-collapse:collapse;font-size:11px}.event-table th{text-align:left;color:#8fa0ad;font-size:9px;text-transform:uppercase;padding:8px;border-bottom:1px solid #202e3a}.event-table td{padding:7px 8px;border-bottom:1px solid #192733;vertical-align:middle}.event-table td:nth-child(2){font-size:13px;font-weight:850;color:#72adff;font-variant-numeric:tabular-nums;white-space:nowrap}.event-table tr.active{background:#18365a}.event-table tr:hover{background:#142a40}.event-table input{width:100%;padding:6px;font-size:11px}.xbtn{border:0;background:none;color:#657582;font-size:12px}.xbtn:hover{color:#ff7474}
 .log-footer{padding:6px 9px;display:flex;gap:20px;color:#7d8b97;font-size:8px;border-top:1px solid var(--line)}.log-footer b{color:#e7edf1}.log-footer .clear{margin-left:auto;color:#ff7777;border:1px solid #4d2930;background:#21151a;border-radius:6px;padding:5px 7px}
 .home-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:8px}.stat{padding:11px;background:var(--panel);border:1px solid var(--line);border-radius:8px}.stat .n{font-size:20px;color:#4c9eff;font-weight:850}.stat .l{font-size:7px;color:#738390;text-transform:uppercase;margin-top:2px}
 .report-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}.report-head h2{font-size:14px}.report-filters{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:9px;margin-bottom:8px}.report-table{width:100%;border-collapse:collapse;font-size:8px}.report-table th,.report-table td{padding:7px;border-bottom:1px solid #1d2a36;text-align:left}.report-table th{color:#71818e;text-transform:uppercase;font-size:7px}
@@ -414,6 +414,7 @@ function parseFotmobMatches(payload,date){
      if(seen.has(key))continue;seen.add(key);
      out.push({
        id:`fotmob_${fotmobId}`,fotmobId,leagueId:String(m?.leagueId||league?.id||league?.primaryId||''),
+       homeId:String(m?.home?.id||''),awayId:String(m?.away?.id||''),
        comp,date,home,away,time:fotmobKickoff(m),
        status:m?.status?.cancelled?'Cancelled':(m?.status?.finished?'FT':(m?.status?.started?'Live':'')),
        href:`https://www.fotmob.com/en-GB/matches/${fotmobId}`
@@ -490,9 +491,9 @@ function getSheet(f){return db.sheets[f.id]||{home:[],away:[],homeSubs:[],awaySu
 function parseSheet(text){return String(text||'').split(/\n+/).map((x,i)=>{x=x.trim();if(!x)return null;let m=x.match(/^(\d+)\s+(.+)$/);return m?{num:m[1],name:m[2]}:{num:'',name:x}}).filter(Boolean)}
 function sheetText(a){return (a||[]).map(p=>(p.num?p.num+' ':'')+p.name).join('\n')}
 function renderLineups(){
- const box=document.getElementById('lineups');if(!current){box.innerHTML='<div style="padding:12px;color:#7d8b98;font-size:9px">No match selected.</div>';return}
+ const box=document.getElementById('lineups');if(!current){box.innerHTML='<div style="padding:12px;color:#7d8b98;font-size:11px">No match selected.</div>';return}
  const s=getSheet(current);const q=document.getElementById('playerSearch').value.toLowerCase();
- const block=(side,team,players,subs)=>`<div style="font-size:7px;color:#71818f;padding:5px 7px;text-transform:uppercase;font-weight:850">${esc(team)}</div>${players.filter(p=>!q||p.name.toLowerCase().includes(q)).map(p=>playerBtn(side,p,team)).join('')}<div class="subs-label">SUBS</div>${subs.filter(p=>!q||p.name.toLowerCase().includes(q)).map(p=>playerBtn(side,p,team,true)).join('')}`;
+ const block=(side,team,players,subs)=>`<section class="team-lineup"><div class="team-lineup-title">${esc(team)} · STARTING XI</div>${players.filter(p=>!q||p.name.toLowerCase().includes(q)).map(p=>playerBtn(side,p,team)).join('')}<div class="subs-label">SUBSTITUTES</div>${subs.filter(p=>!q||p.name.toLowerCase().includes(q)).map(p=>playerBtn(side,p,team,true)).join('')}</section>`;
  box.innerHTML=block('home',current.home,s.home||[],s.homeSubs||[])+block('away',current.away,s.away||[],s.awaySubs||[]);
 }
 function playerBtn(side,p,team,sub=false){const id=esc(side+'|'+p.num+'|'+p.name);return `<button class="player" data-player="${id}" data-name="${esc(p.name)}" data-team="${esc(team)}"><span class="num">${esc(p.num)}</span><span class="pname">${esc(p.name)}</span></button>`}
@@ -534,24 +535,44 @@ async function resolveSkyTeamsUrl(f){
  const sameId=skyTeamsUrl(href);
  return sameId||'';
 }
+function normFotmobTeam(name){return String(name||'').toLowerCase().replace(/[’']/g,'').replace(/\b(fc|afc|women|womens|ladies)\b/g,' ').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
+function fotmobPlayer(p){return {num:String(p?.shirtNumber??p?.shirt??''),name:String(p?.name||p?.fullName||'').trim()}}
+function parseFotmobLineup(payload,f){
+ const data=payload?.data||payload;const lineup=data?.content?.lineup;
+ if(!lineup?.homeTeam||!lineup?.awayTeam)throw Error('FotMob has not published line-ups for this fixture yet');
+ const general=data?.general||{};
+ const gh=normFotmobTeam(general?.homeTeam?.name||lineup.homeTeam.name),ga=normFotmobTeam(general?.awayTeam?.name||lineup.awayTeam.name);
+ const fh=normFotmobTeam(f.home),fa=normFotmobTeam(f.away);
+ const detailHomeId=String(general?.homeTeam?.id||lineup.homeTeam.id||''),detailAwayId=String(general?.awayTeam?.id||lineup.awayTeam.id||'');
+ if(f.homeId&&detailHomeId&&String(f.homeId)!==detailHomeId)throw Error('FotMob home-team ID does not match the selected fixture');
+ if(f.awayId&&detailAwayId&&String(f.awayId)!==detailAwayId)throw Error('FotMob away-team ID does not match the selected fixture');
+ if(!f.homeId&&fh&&gh && !(gh.includes(fh)||fh.includes(gh)) )throw Error(`FotMob match mismatch: expected ${f.home}, received ${general?.homeTeam?.name||lineup.homeTeam.name}`);
+ if(!f.awayId&&fa&&ga && !(ga.includes(fa)||fa.includes(ga)) )throw Error(`FotMob match mismatch: expected ${f.away}, received ${general?.awayTeam?.name||lineup.awayTeam.name}`);
+ const home=(lineup.homeTeam.starters||[]).map(fotmobPlayer).filter(p=>p.name);
+ const away=(lineup.awayTeam.starters||[]).map(fotmobPlayer).filter(p=>p.name);
+ const homeSubs=(lineup.homeTeam.subs||[]).map(fotmobPlayer).filter(p=>p.name);
+ const awaySubs=(lineup.awayTeam.subs||[]).map(fotmobPlayer).filter(p=>p.name);
+ if(home.length!==11||away.length!==11)throw Error(`Incomplete FotMob line-up: ${home.length}/${away.length} starters`);
+ return {home,away,homeSubs,awaySubs,sourceHome:f.home,sourceAway:f.away,sourceUrl:`https://www.fotmob.com/en-GB/matches/${f.fotmobId||''}`,source:'FotMob'};
+}
 async function getLineups(){
  if(!current){toast('Select a fixture first.');return}
- document.getElementById('getLineupsBtn').textContent='Loading…';document.getElementById('getLineupsBtn').disabled=true;
+ const matchId=String(current.fotmobId||String(current.id||'').replace(/^fotmob_/,''));
+ if(!/^\d+$/.test(matchId)){toast('This fixture has no FotMob match ID');return}
+ const btn=document.getElementById('getLineupsBtn');btn.textContent='Loading…';btn.disabled=true;
  try{
-   const teamsUrl=await resolveSkyTeamsUrl(current);
-   if(!teamsUrl)throw Error('Sky Teams link could not be found on the match centre');
-   const raw=(await fetchSkyPage(teamsUrl)).text;
-   const parsed=parseLineupText(raw,current);
-   if(parsed.home.length!==11 || parsed.away.length!==11)throw Error(`Incomplete line-up: ${parsed.home.length}/${parsed.away.length}`);
-   db.sheets[current.id]={...getSheet(current),...parsed,sourceHome:current.home,sourceAway:current.away,sourceUrl:teamsUrl};saveDB();renderLineups();document.getElementById('loggerBanner').textContent='Team sheets loaded — Sky Sports line-ups imported.';toast('Sky Sports line-ups loaded');
+   if(!window.llBridge?.fetchFotmobMatchDetails)throw Error('FotMob match-details bridge is unavailable');
+   const response=await window.llBridge.fetchFotmobMatchDetails(matchId);
+   const parsed=parseFotmobLineup(response,current);
+   db.sheets[current.id]={...getSheet(current),...parsed};saveDB();renderLineups();
+   document.getElementById('loggerBanner').textContent=`Team sheets loaded — FotMob line-ups imported (${parsed.home.length} + ${parsed.away.length} starters).`;
+   toast('FotMob line-ups loaded');
  }catch(e){
    const detail=String(e?.message||e||'Unknown error');
-   document.getElementById('loggerBanner').textContent=`Sky Sports line-ups could not be read (${detail}). Use Team Sheets for a manual fallback.`;
+   document.getElementById('loggerBanner').textContent=`FotMob line-ups unavailable (${detail}). Use Team Sheets for a manual fallback.`;
    toast('Line-ups unavailable — use Team Sheets');
- }
- finally{document.getElementById('getLineupsBtn').textContent='⟳ Get Line-ups';document.getElementById('getLineupsBtn').disabled=false}
+ }finally{btn.textContent='⟳ Get Line-ups';btn.disabled=false}
 }
-
 function parseLineupText(raw,f){
  let text=String(raw||'');
  if(/<html[\s>]/i.test(text)){
@@ -687,7 +708,7 @@ document.addEventListener('input',e=>{
  if(e.target.id==='teamSearch'||e.target.id==='compFilter')renderFixtures();
  if(e.target.id==='playerSearch')renderLineups();
  if(e.target.id==='eventSearch')renderEvents();
- if(e.target.dataset.field){const id=e.target.closest('tr')?.dataset.row;if(id)updateActive({[e.target.dataset.field]:e.target.value})}
+ if(e.target.dataset.field){const id=e.target.closest('tr')?.dataset.row;const x=logs().find(v=>v.id===id);if(x){x[e.target.dataset.field]=e.target.value;saveDB()}}
  if(e.target.id==='reportGlobalSearch'||['rPlayer','rTeam','rEvent','rRating'].includes(e.target.id))renderReports();
  if(e.target.dataset.intquote){const iv=intArr()[0];if(iv?.entries[+e.target.dataset.intquote]){iv.entries[+e.target.dataset.intquote].quote=e.target.value;saveDB()}}
 });

@@ -6,6 +6,7 @@ let skyLoadPromise = null;
 const SKY_ORIGIN_RE=/^https:\/\/(?:www\.)?skysports\.com\//i;
 
 const FOTMOB_MATCHES_URL='https://www.fotmob.com/api/data/matches';
+const FOTMOB_MATCH_DETAILS_URL='https://www.fotmob.com/api/data/matchDetails';
 async function fetchFotmobMatches(date){
   const d=String(date||'').replace(/-/g,'');
   if(!/^\d{8}$/.test(d)) throw new Error('FotMob date must be YYYY-MM-DD or YYYYMMDD');
@@ -26,6 +27,30 @@ async function fetchFotmobMatches(date){
     const data=await response.json();
     if(!data || !Array.isArray(data.leagues)) throw new Error('FotMob returned an unexpected matches payload');
     return {ok:true,url,date:d,data};
+  } finally { clearTimeout(timeout); }
+}
+
+
+async function fetchFotmobMatchDetails(matchId){
+  const id=String(matchId||'').trim();
+  if(!/^\d+$/.test(id)) throw new Error('A valid FotMob match ID is required');
+  const url=`${FOTMOB_MATCH_DETAILS_URL}?matchId=${encodeURIComponent(id)}`;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),20000);
+  try{
+    const response=await fetch(url,{
+      signal:controller.signal,
+      headers:{
+        'accept':'application/json,text/plain,*/*',
+        'accept-language':'en-GB,en;q=0.9',
+        'referer':'https://www.fotmob.com/en-GB',
+        'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138 Safari/537.36'
+      }
+    });
+    if(!response.ok) throw new Error(`FotMob match details returned HTTP ${response.status}`);
+    const data=await response.json();
+    if(!data?.general || !data?.content) throw new Error('FotMob returned an unexpected match-details payload');
+    return {ok:true,url,matchId:id,data};
   } finally { clearTimeout(timeout); }
 }
 
@@ -148,6 +173,7 @@ async function resolveSkyFixture(fixture){
 }
 
 ipcMain.handle('fotmob-matches', async (_event, date) => fetchFotmobMatches(date));
+ipcMain.handle('fotmob-match-details', async (_event, matchId) => fetchFotmobMatchDetails(matchId));
 ipcMain.handle('http-fetch', async (_event, url) => loadSkyRendered(url));
 ipcMain.handle('sky-resolve-fixture', async (_event, fixture) => resolveSkyFixture(fixture));
 

@@ -1,12 +1,15 @@
-# LL Match Logger v2.3 — FotMob Fixture Parser Test
+# LL Match Logger v2.4
 
-This test build switches the Fixtures screen from Sky Sports scraping to FotMob structured match data.
+Gallery-focused football logger.
 
-## Test scope
-- Daily fixtures from FotMob
-- Hard whitelist: Premier League, Championship, League One, League Two, WSL, EFL Trophy, Carabao Cup, UEFA Europa League, UEFA Europa Conference League
-- UK kick-off times from FotMob `status.utcTime`
-- FotMob match ID retained on every fixture for future lineup retrieval
-- Existing logging workflow retained
+## v2.4 changes
+- Keeps the proven FotMob fixture parser from v2.3.
+- Get Line-ups uses the selected fixture's stored FotMob match ID and FotMob matchDetails lineup data.
+- Validates the returned match and requires 11 starters for both teams before populating.
+- Home and away starting XIs and substitutes are displayed side-by-side with no internal lineup scrolling at the app's normal desktop size.
+- Larger interface typography, with larger/high-contrast timecodes in the event log.
+- Clip number, EVS and Notes fields can be typed continuously without rerendering the row on every keystroke.
+- Manual Team Sheets remain available as fallback.
+- Fixtures remain the opening screen.
 
-Lineup retrieval has deliberately not been switched to FotMob in this parser-test build. First confirm fixture coverage, competition filtering and kick-off times.
+Build using the existing GitHub Actions workflow.
