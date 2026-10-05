@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LL Match Logger v2.2 — Sky Sports</title>
+<title>LL Match Logger v2.3 — Sky Sports</title>
 <style>
 :root{
  --bg:#081019;--panel:#101a25;--panel2:#14202c;--panel3:#182735;--line:#223140;
@@ -81,7 +81,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
  <div class="sidebar-bottom">
   <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
-  <div class="app-version">v2.2.0</div>
+  <div class="app-version">v2.3.0 FotMob Parser Test</div>
  </div>
 </aside>
 <main class="main">
@@ -89,7 +89,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
  <div class="content">
 
   <section id="matchesView" class="view active">
-   <div class="page-head"><div><h1>Matches</h1><div class="sub" id="fixtureCount">Sky Sports supported fixtures</div></div><div class="page-actions"><button class="btn" id="refreshBtn">Refresh fixtures</button><button class="btn blue" id="manualBtn">Manual match</button></div></div>
+   <div class="page-head"><div><h1>Matches</h1><div class="sub" id="fixtureCount">FotMob parser test · 9 competitions</div></div><div class="page-actions"><button class="btn" id="refreshBtn">Refresh fixtures</button><button class="btn blue" id="manualBtn">Manual match</button></div></div>
    <div class="tabs"><button class="active" data-matchtab="fixtures">Fixtures</button><button data-matchtab="saved">Saved logs</button></div>
    <div id="fixturesTab">
     <div class="filters"><select id="compFilter"><option value="ALL">All supported competitions</option></select><input id="teamSearch" placeholder="Search team..."><button class="btn" id="todayBtn">Today</button><input id="dateInput" type="date"></div>
@@ -157,7 +157,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
    <div class="page-head"><div><h1>Settings</h1><div class="sub">Logger preferences and Sky Sports data connection</div></div></div>
    <div class="settings-grid">
     <div class="card setting"><h3>Data source</h3><p>This build uses Sky Sports' football Scores & Fixtures pages as the primary source. Match links point back to Sky Sports match centres for line-up retrieval when available.</p><div class="setting-row"><span>Fixture source</span><b>Sky Sports</b></div><div class="setting-row"><span>Local saving</span><b>On</b></div></div>
-    <div class="card setting"><h3>Connection</h3><p>A local HTML file may be blocked by browser CORS or a corporate network. The logger queries only the nine supported Sky Sports competition pages. Successful results are cached by date so a temporary network failure cannot wipe the fixture list. No BBC endpoint is used.</p><button class="btn" id="testSky">Test Sky Sports connection</button><div id="testResult" class="sub" style="margin-top:8px">Not tested.</div></div>
+    <div class="card setting"><h3>Connection</h3><p>Parser-test build: fixtures are loaded from FotMob and hard-filtered to the nine supported competitions. Each fixture stores its FotMob match ID for the next line-up integration step. Successful results are cached by date.</p><button class="btn" id="testSky">Test FotMob connection</button><div id="testResult" class="sub" style="margin-top:8px">Not tested.</div></div>
     <div class="card setting"><h3>Logging behaviour</h3><div class="setting-row"><span>Player click creates event instantly</span><span class="switch on"></span></div><div class="setting-row"><span>Timestamp is captured on click</span><span class="switch on"></span></div><div class="setting-row"><span>Time code format</span><b>HH:MM:SS:FF</b></div></div>
     <div class="card setting"><h3>Storage</h3><p>Logs and manually entered team sheets stay in this browser on this device.</p><button class="btn danger" id="wipeData">Clear all saved logger data</button></div>
    </div>
@@ -167,16 +167,37 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
 </div>
 <div class="toast" id="toast"></div>
 
-<div class="modal" id="manualModal"><div class="modalbox"><div class="modal-head"><h3>New match</h3><button class="btn small close">Close</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="mComp" placeholder="Competition"><input id="mDate" type="date"><input id="mHome" placeholder="Home team"><input id="mAway" placeholder="Away team"><input id="mKick" placeholder="Kick-off e.g. 19:45"><input id="mHref" placeholder="Sky Sports match URL (optional)"></div><div class="modal-actions"><button class="btn blue" id="createManual">Create match</button></div></div></div>
+<div class="modal" id="manualModal"><div class="modalbox"><div class="modal-head"><h3>New match</h3><button class="btn small close">Close</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="mComp" placeholder="Competition"><input id="mDate" type="date"><input id="mHome" placeholder="Home team"><input id="mAway" placeholder="Away team"><input id="mKick" placeholder="Kick-off e.g. 19:45"><input id="mHref" placeholder="Match URL (optional)"></div><div class="modal-actions"><button class="btn blue" id="createManual">Create match</button></div></div></div>
 
 <div class="modal" id="teamModal"><div class="modalbox"><div class="modal-head"><h3>Team Sheets</h3><button class="btn small close">Close</button></div><div class="team-edit-grid"><div class="team-edit"><div class="label">Home starters (one per line: number name)</div><textarea id="homeSheet"></textarea><div class="label" style="margin-top:8px">Home substitutes</div><textarea id="homeSubs"></textarea></div><div class="team-edit"><div class="label">Away starters (one per line: number name)</div><textarea id="awaySheet"></textarea><div class="label" style="margin-top:8px">Away substitutes</div><textarea id="awaySubs"></textarea></div></div><div class="modal-actions"><button class="btn blue" id="saveSheets">Save team sheets</button></div></div></div>
 
 <div class="modal" id="interviewModal"><div class="modalbox" style="width:min(600px,92vw)"><div class="modal-head"><h3>New Interview</h3><button class="btn small close">Close</button></div><div class="label">Competition</div><select id="intComp" style="width:100%;margin:5px 0 9px"></select><div class="label">Match</div><select id="intMatchSelect" style="width:100%;margin:5px 0 9px"></select><div class="label">Speaker</div><input id="intSpeakerInput" placeholder="e.g. Cole Palmer" style="width:100%;margin:5px 0"><div class="modal-actions"><button class="btn blue" id="createInterview">Start</button></div></div></div>
 
 <script>
-const SKY_DAILY='https://www.skysports.com/football-scores-fixtures/';
-const STORE='LLMatchLoggerSkyDesktopV22';
+const STORE='LLMatchLoggerFotMobParserV23';
 const COMPETITIONS=['Premier League','Championship','League One','League Two','WSL','EFL Trophy','Carabao Cup','UEFA Europa League','UEFA Europa Conference League'];
+const FOTMOB_COMPETITION_ALIASES={
+ 'premier league':'Premier League',
+ 'championship':'Championship',
+ 'league one':'League One',
+ 'efl league one':'League One',
+ 'league two':'League Two',
+ 'efl league two':'League Two',
+ "women's super league":'WSL',
+ 'womens super league':'WSL',
+ 'wsl':'WSL',
+ 'efl trophy':'EFL Trophy',
+ 'football league trophy':'EFL Trophy',
+ 'vertu trophy':'EFL Trophy',
+ 'carabao cup':'Carabao Cup',
+ 'efl cup':'Carabao Cup',
+ 'league cup':'Carabao Cup',
+ 'europa league':'UEFA Europa League',
+ 'uefa europa league':'UEFA Europa League',
+ 'conference league':'UEFA Europa Conference League',
+ 'uefa conference league':'UEFA Europa Conference League',
+ 'uefa europa conference league':'UEFA Europa Conference League'
+};
 const COMP_ALIASES={
  'Premier League':'premier league',
  'Championship':'championship',
@@ -198,7 +219,7 @@ function loadDB(){try{const x=JSON.parse(localStorage.getItem(STORE));return x?{
 function saveDB(){localStorage.setItem(STORE,JSON.stringify(db));document.getElementById('saveStatus').textContent='Saved '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 
 function nowTc(){const d=new Date();const ff=Math.floor(d.getMilliseconds()/40);return [d.getHours(),d.getMinutes(),d.getSeconds(),ff].map(n=>String(n).padStart(2,'0')).join(':')}
-function tick(){document.getElementById('globalTc').textContent=nowTc();document.getElementById('globalStatus').textContent=fixtureSourceState|| (fixtures.length?`${fixtures.length} fixtures`:'Sky Sports · ready');if(interviewState?.running){document.getElementById('intTod').textContent=nowTc();document.getElementById('intDur').textContent=fmtDur((Date.now()-interviewState.started)/1000)}}setInterval(tick,40);tick();
+function tick(){document.getElementById('globalTc').textContent=nowTc();document.getElementById('globalStatus').textContent=fixtureSourceState|| (fixtures.length?`${fixtures.length} fixtures`:'FotMob · ready');if(interviewState?.running){document.getElementById('intTod').textContent=nowTc();document.getElementById('intDur').textContent=fmtDur((Date.now()-interviewState.started)/1000)}}setInterval(tick,40);tick();
 function fmtDur(s){s=Math.max(0,Math.floor(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>e.classList.remove('show'),1800)}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
@@ -358,38 +379,78 @@ async function enrichFixtures(rows){
  await Promise.all(Array.from({length:Math.min(3,pending.length)},()=>worker()));
  return rows;
 }
-async function loadSkyFixtures(date){
- const cache=db.fixtureCache?.[date]||{};
- const url=SKY_DAILY+date;
- const result=await fetchSkyPage(url);
- const rows=parseSkyDailyPage(result.text,date);
- // Hard isolation: never return anything outside the nine explicitly supported competitions.
- const allowed=new Set(COMPETITIONS);const filtered=rows.filter(f=>allowed.has(f.comp));
- if(filtered.length){
-   await enrichFixtures(filtered);
-   db.fixtureCache[date]={};for(const f of filtered){(db.fixtureCache[date][f.comp] ||= []).push(f)}saveDB();
-   return {rows:filtered,errors:[],via:[`daily:${result.via}`],url};
+function normalizeFotmobCompetition(league){
+ const raw=cleanText(league?.name||league?.localizedName||'').replace(/[’]/g,"'").toLowerCase();
+ const mapped=FOTMOB_COMPETITION_ALIASES[raw]||null;
+ if(!mapped)return null;
+ // Domestic competitions must be the English competition, preventing similarly named leagues elsewhere.
+ if(['Premier League','Championship','League One','League Two','WSL','EFL Trophy','Carabao Cup'].includes(mapped)){
+   const cc=String(league?.ccode||league?.countryCode||'').toUpperCase();
+   if(cc && cc!=='ENG')return null;
  }
- const cached=Object.values(cache).flat().filter(f=>allowed.has(f.comp));
- return {rows:cached,errors:cached.length?['Sky returned no supported fixtures; cache used']:['No supported fixtures found on Sky for this date'],via:[`daily:${result.via}`],url};
+ return mapped;
+}
+function fotmobKickoff(match){
+ const utc=match?.status?.utcTime;
+ if(utc){
+   const d=new Date(utc);
+   if(!Number.isNaN(d.getTime())) return d.toLocaleTimeString('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false});
+ }
+ const raw=cleanText(match?.time||'');
+ const m=raw.match(/(?:^|\s)(\d{1,2}):(\d{2})(?:\s|$)/);
+ return m?`${String(m[1]).padStart(2,'0')}:${m[2]}`:'';
+}
+function parseFotmobMatches(payload,date){
+ const out=[],seen=new Set();
+ for(const league of payload?.leagues||[]){
+   const comp=normalizeFotmobCompetition(league);
+   if(!comp)continue;
+   for(const m of league.matches||[]){
+     const home=cleanText(m?.home?.longName||m?.home?.name||'');
+     const away=cleanText(m?.away?.longName||m?.away?.name||'');
+     const fotmobId=String(m?.id||'').trim();
+     if(!home||!away||!fotmobId)continue;
+     const key=`${comp}|${fotmobId}`;
+     if(seen.has(key))continue;seen.add(key);
+     out.push({
+       id:`fotmob_${fotmobId}`,fotmobId,leagueId:String(m?.leagueId||league?.id||league?.primaryId||''),
+       comp,date,home,away,time:fotmobKickoff(m),
+       status:m?.status?.cancelled?'Cancelled':(m?.status?.finished?'FT':(m?.status?.started?'Live':'')),
+       href:`https://www.fotmob.com/en-GB/matches/${fotmobId}`
+     });
+   }
+ }
+ return out.sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99')||a.comp.localeCompare(b.comp));
+}
+async function loadFotmobFixtures(date){
+ if(!window.llBridge?.fetchFotmobMatches)throw new Error('FotMob bridge is unavailable');
+ const result=await window.llBridge.fetchFotmobMatches(date);
+ const rows=parseFotmobMatches(result?.data,date);
+ const allowed=new Set(COMPETITIONS);
+ const filtered=rows.filter(f=>allowed.has(f.comp));
+ if(filtered.length){
+   db.fixtureCache[date]={};for(const f of filtered){(db.fixtureCache[date][f.comp] ||= []).push(f)}saveDB();
+   return {rows:filtered,errors:[],url:result?.url||''};
+ }
+ throw new Error('FotMob returned no fixtures from the nine supported competitions for this date');
 }
 async function refreshFixtures(){
  const date=document.getElementById('dateInput').value||today();
- document.getElementById('globalStatus').textContent='Loading supported Sky Sports competitions…';
- document.getElementById('fixtureList').innerHTML='<div class="card" style="padding:15px;color:#82919e">Loading only the 9 supported competitions…</div>';
+ document.getElementById('globalStatus').textContent='Loading FotMob fixtures…';
+ document.getElementById('fixtureList').innerHTML='<div class="card" style="padding:15px;color:#82919e">Loading the 9 supported competitions from FotMob…</div>';
  try{
-  const result=await loadSkyFixtures(date);fixtures=result.rows;
-  fixtureSourceState=result.errors.length?`Sky Sports · ${fixtures.length} fixtures · ${result.errors.length} cached/unavailable`: `Sky Sports · ${fixtures.length} fixtures`;
-  document.getElementById('fixtureCount').textContent=`${fixtures.length} supported fixtures for ${date}`;
+  const result=await loadFotmobFixtures(date);fixtures=result.rows;
+  fixtureSourceState=`FotMob · ${fixtures.length} fixtures`;
+  document.getElementById('fixtureCount').textContent=`${fixtures.length} FotMob fixtures for ${date}`;
   populateCompFilters();renderFixtures();populateLoggerComp();
-  toast(result.errors.length?`Loaded ${fixtures.length}; some competitions used cache.`:`Loaded ${fixtures.length} supported fixtures`);
+  toast(`Loaded ${fixtures.length} FotMob fixtures`);
  }catch(e){
-  const cached=Object.values(db.fixtureCache?.[date]||{}).flat();
+  const cached=Object.values(db.fixtureCache?.[date]||{}).flat().filter(f=>String(f.id||'').startsWith('fotmob_'));
   fixtures=cached.length?cached:db.manual.filter(x=>x.date===date);
-  fixtureSourceState=cached.length?'Sky Sports unavailable · showing last successful fixtures':'Sky Sports unavailable · no cached fixtures';
-  document.getElementById('fixtureCount').textContent=cached.length?`${cached.length} cached supported fixtures for ${date}`:`No fixtures available for ${date}`;
+  fixtureSourceState=cached.length?'FotMob unavailable · showing cached fixtures':'FotMob unavailable';
+  document.getElementById('fixtureCount').textContent=cached.length?`${cached.length} cached FotMob fixtures for ${date}`:`FotMob error: ${e.message||e}`;
   populateCompFilters();renderFixtures();populateLoggerComp();
-  toast(cached.length?'Sky connection failed — keeping the last successful fixture list.':'Sky Sports could not be reached.');
+  toast(cached.length?'FotMob connection failed — showing cached fixtures.':`FotMob failed: ${e.message||e}`);
  }
 }
 function populateCompFilters(){const s=document.getElementById('compFilter');const cur=s.value;s.innerHTML='<option value="ALL">All supported competitions</option>'+COMPETITIONS.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');if(COMPETITIONS.includes(cur))s.value=cur}
@@ -642,7 +703,7 @@ document.getElementById('manualBtn').onclick=manualMatch;document.getElementById
 document.getElementById('getLineupsBtn').onclick=getLineups;document.getElementById('teamSheetsBtn').onclick=openTeamModal;document.getElementById('editTeamsBtn').onclick=openTeamModal;document.getElementById('saveSheets').onclick=saveSheets;
 document.getElementById('clearLogBtn').onclick=clearLog;document.getElementById('exportBtn').onclick=exportCSV;document.getElementById('addCamera').onclick=addCustomCamera;document.getElementById('saveLogMeta').onclick=saveLogMeta;
 document.getElementById('createManual').onclick=createManual;
-document.getElementById('testSky').onclick=async()=>{document.getElementById('testResult').textContent='Testing supported Sky Sports feeds…';try{const x=await loadSkyFixtures(today());document.getElementById('testResult').textContent=`Supported Sky feeds OK — ${x.rows.length} fixtures found.`}catch(e){document.getElementById('testResult').textContent='Sky Sports feeds could not be reached from this browser/network; cached fixtures remain available.'}};
+document.getElementById('testSky').onclick=async()=>{document.getElementById('testResult').textContent='Testing FotMob daily matches feed…';try{const x=await loadFotmobFixtures(today());document.getElementById('testResult').textContent=`FotMob feed OK — ${x.rows.length} supported fixtures found.`}catch(e){document.getElementById('testResult').textContent=`FotMob test failed: ${e.message||e}`}};
 document.getElementById('wipeData').onclick=()=>{if(confirm('Delete all saved logger data from this browser?')){localStorage.removeItem(STORE);location.reload()}};
 document.getElementById('addInterview').onclick=addInterview;document.getElementById('createInterview').onclick=createInterview;document.getElementById('startInterview').onclick=startInterview;document.getElementById('markInterview').onclick=markInterview;document.getElementById('endInterview').onclick=endInterview;document.getElementById('intBack').onclick=()=>showView('matches');document.getElementById('clearInt').onclick=()=>{if(confirm('Clear interview log?')){db.interviews[interviewKey()]=[];saveDB();renderIntLog()}};
 document.getElementById('darkSwitch').onclick=e=>e.currentTarget.classList.toggle('on');
