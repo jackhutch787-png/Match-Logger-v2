@@ -1,7 +1,7 @@
 {
   "name": "ll-match-logger",
-  "version": "2.4.0",
-  "description": "LL Match Logger v2.4 - FotMob fixtures and line-ups",
+  "version": "2.5.0",
+  "description": "LL Match Logger v2.5 - FotMob fixtures and line-ups with substitutions",
   "main": "main.js",
   "author": "LL Match Logger",
   "license": "MIT",

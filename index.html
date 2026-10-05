@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LL Match Logger v2.4 — FotMob</title>
+<title>LL Match Logger v2.5 — FotMob</title>
 <style>
 :root{
  --bg:#081019;--panel:#101a25;--panel2:#14202c;--panel3:#182735;--line:#223140;
@@ -81,7 +81,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
  <div class="sidebar-bottom">
   <div class="switchrow">◐ Dark Mode <span class="switch on" id="darkSwitch"></span></div>
   <div class="save-status"><span class="save-dot"></span><span id="saveStatus">Saved —</span></div>
-  <div class="app-version">v2.3.0 FotMob Parser Test</div>
+  <div class="app-version">v2.5.0</div>
  </div>
 </aside>
 <main class="main">
@@ -174,7 +174,7 @@ input,select,textarea{background:var(--input);color:var(--text);border:1px solid
 <div class="modal" id="interviewModal"><div class="modalbox" style="width:min(600px,92vw)"><div class="modal-head"><h3>New Interview</h3><button class="btn small close">Close</button></div><div class="label">Competition</div><select id="intComp" style="width:100%;margin:5px 0 9px"></select><div class="label">Match</div><select id="intMatchSelect" style="width:100%;margin:5px 0 9px"></select><div class="label">Speaker</div><input id="intSpeakerInput" placeholder="e.g. Cole Palmer" style="width:100%;margin:5px 0"><div class="modal-actions"><button class="btn blue" id="createInterview">Start</button></div></div></div>
 
 <script>
-const STORE='LLMatchLoggerFotMobParserV23';
+const STORE='LLMatchLoggerFotMobParserV23'; // keep v2.5 storage so existing logs/sheets carry into v2.5
 const COMPETITIONS=['Premier League','Championship','League One','League Two','WSL','EFL Trophy','Carabao Cup','UEFA Europa League','UEFA Europa Conference League'];
 const FOTMOB_COMPETITION_ALIASES={
  'premier league':'Premier League',
@@ -380,6 +380,8 @@ async function enrichFixtures(rows){
  return rows;
 }
 function normalizeFotmobCompetition(league){
+ const leagueId=String(league?.id||league?.primaryId||'');
+ if(leagueId==='142')return 'EFL Trophy';
  const raw=cleanText(league?.name||league?.localizedName||'').replace(/[’]/g,"'").toLowerCase();
  const mapped=FOTMOB_COMPETITION_ALIASES[raw]||null;
  if(!mapped)return null;
@@ -495,8 +497,9 @@ function renderLineups(){
  const s=getSheet(current);const q=document.getElementById('playerSearch').value.toLowerCase();
  const block=(side,team,players,subs)=>`<section class="team-lineup"><div class="team-lineup-title">${esc(team)} · STARTING XI</div>${players.filter(p=>!q||p.name.toLowerCase().includes(q)).map(p=>playerBtn(side,p,team)).join('')}<div class="subs-label">SUBSTITUTES</div>${subs.filter(p=>!q||p.name.toLowerCase().includes(q)).map(p=>playerBtn(side,p,team,true)).join('')}</section>`;
  box.innerHTML=block('home',current.home,s.home||[],s.homeSubs||[])+block('away',current.away,s.away||[],s.awaySubs||[]);
+ const x=selectedLog();const names=[x?.primaryPlayer?.name,x?.secondaryPlayer?.name].filter(Boolean);document.querySelectorAll('.player').forEach(b=>b.classList.toggle('selected',names.includes(b.dataset.name)));
 }
-function playerBtn(side,p,team,sub=false){const id=esc(side+'|'+p.num+'|'+p.name);return `<button class="player" data-player="${id}" data-name="${esc(p.name)}" data-team="${esc(team)}"><span class="num">${esc(p.num)}</span><span class="pname">${esc(p.name)}</span></button>`}
+function playerBtn(side,p,team,sub=false){const id=esc(side+'|'+p.num+'|'+p.name);return `<button class="player" data-player="${id}" data-name="${esc(p.name)}" data-team="${esc(team)}" data-side="${esc(side)}" data-sub="${sub?'1':'0'}"><span class="num">${esc(p.num)}</span><span class="pname">${esc(p.name)}</span></button>`}
 
 function extractSkyMatchId(href){
  const u=localHref(href); if(!u)return '';
@@ -640,9 +643,28 @@ function keywordsRender(){document.getElementById('keywords').innerHTML=KEYWORDS
 keywordsRender();
 function logs(){return current?(db.logs[current.id]||[]):[]}
 function selectedLog(){return logs().find(x=>x.id===activeEventId)||logs().slice(-1)[0]}
-function createPlayerEvent(name,team,num){
- if(!current)return;const e={id:'e'+Date.now()+Math.random().toString(36).slice(2,7),clip:'',time:nowTc(),player:num?`${num}. ${name}`:name,team,event:'',rating:'',note:'',cameras:[],evs:''};
- db.logs[current.id]=[...logs(),e];activeEventId=e.id;saveDB();renderEvents();document.querySelectorAll('.player').forEach(b=>b.classList.toggle('selected',b.dataset.name===name));toast(`${name} · ${e.time}`);
+function createPlayerEvent(name,team,num,side='',isSub=false){
+ if(!current)return;const e={id:'e'+Date.now()+Math.random().toString(36).slice(2,7),clip:'',time:nowTc(),player:num?`${num}. ${name}`:name,team,event:'',rating:'',note:'',cameras:[],evs:'',primaryPlayer:{name,num:String(num||''),team,side,isSub:!!isSub},secondaryPlayer:null};
+ db.logs[current.id]=[...logs(),e];activeEventId=e.id;saveDB();renderEvents();renderLineups();toast(`${name} · ${e.time}`);
+}
+function selectPlayerForLog(name,team,num,side,isSub){
+ const x=selectedLog();
+ // Only turn a second click into a substitution pair when the active row has no incident yet,
+ // both players are on the same team, and one is XI while the other is a substitute.
+ if(x&&x.id===activeEventId&&!x.event&&x.primaryPlayer&&!x.secondaryPlayer&&x.primaryPlayer.team===team&&x.primaryPlayer.side===side&&x.primaryPlayer.isSub!==isSub&&x.primaryPlayer.name!==name){
+   x.secondaryPlayer={name,num:String(num||''),team,side,isSub:!!isSub};saveDB();renderEvents();renderLineups();toast(`${x.primaryPlayer.name} + ${name} selected`);return;
+ }
+ createPlayerEvent(name,team,num,side,isSub);
+}
+function applySubstitution(){
+ const x=selectedLog();if(!x?.primaryPlayer||!x?.secondaryPlayer)return false;
+ const a=x.primaryPlayer,b=x.secondaryPlayer;if(a.team!==b.team||a.side!==b.side||a.isSub===b.isSub)return false;
+ const off=a.isSub?b:a,on=a.isSub?a:b;
+ const s=getSheet(current),starters=off.side==='home'?s.home:s.away,subs=off.side==='home'?s.homeSubs:s.awaySubs;
+ const oi=starters.findIndex(p=>p.name===off.name),ni=subs.findIndex(p=>p.name===on.name);if(oi<0||ni<0)return false;
+ const offPlayer=starters[oi],onPlayer=subs[ni];starters.splice(oi,1,onPlayer);subs.splice(ni,1,offPlayer);
+ x.player=`${off.num?off.num+'. ':''}${off.name} OFF / ${on.num?on.num+'. ':''}${on.name} ON`;x.substitution={off,on};
+ db.sheets[current.id]=s;saveDB();renderLineups();renderEvents();toast(`${off.name} OFF · ${on.name} ON`);return true;
 }
 function updateActive(patch){const arr=logs();const idx=arr.findIndex(x=>x.id===activeEventId);if(idx<0)return;arr[idx]={...arr[idx],...patch};db.logs[current.id]=arr;saveDB();renderEvents()}
 function renderEvents(){
@@ -694,9 +716,9 @@ document.getElementById('topics').innerHTML=TOPICS.map(x=>`<button class="topic"
 document.addEventListener('click',e=>{
  const nav=e.target.closest('.nav button');if(nav){showView(nav.dataset.view);return}
  const f=e.target.closest('[data-fixture]');if(f){const x=fixtures.find(z=>z.id===f.dataset.fixture);if(x)openFixture(x);return}
- const p=e.target.closest('[data-player]');if(p){createPlayerEvent(p.dataset.name,p.dataset.team,(p.dataset.player.split('|')[1]||''));return}
+ const p=e.target.closest('[data-player]');if(p){selectPlayerForLog(p.dataset.name,p.dataset.team,(p.dataset.player.split('|')[1]||''),p.dataset.side,p.dataset.sub==='1');return}
  const cam=e.target.closest('[data-cam]');if(cam){toggleCamera(cam.dataset.cam);return}
- const k=e.target.closest('[data-key]');if(k){if(!selectedLog())return;updateActive({event:k.dataset.key});document.querySelectorAll('.keyword').forEach(b=>b.classList.toggle('active',b===k));return}
+ const k=e.target.closest('[data-key]');if(k){if(!selectedLog())return;if(k.dataset.key==='SUBSTITUTION'){const x=selectedLog();if(!x?.secondaryPlayer){toast('Select one XI player and one substitute from the same team');return}if(!applySubstitution()){toast('Invalid substitution pair');return}updateActive({event:'SUBSTITUTION'});}else updateActive({event:k.dataset.key});document.querySelectorAll('.keyword').forEach(b=>b.classList.toggle('active',b===k));return}
  const r=e.target.closest('[data-rate]');if(r){rate(+r.dataset.rate);return}
  const d=e.target.closest('[data-delete]');if(d){deleteEvent(d.dataset.delete);return}
  const t=e.target.closest('[data-topic]');if(t){t.classList.toggle('active');const iv=intArr()[0];if(iv){iv.topics=iv.topics||[];if(iv.topics.includes(t.dataset.topic))iv.topics=iv.topics.filter(x=>x!==t.dataset.topic);else iv.topics.push(t.dataset.topic);saveDB()}return}
